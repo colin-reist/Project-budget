@@ -78,7 +78,7 @@
               </UBadge>
             </div>
             <div class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatCurrency(parseFloat(account.balance || 0)) }}
+              {{ formatCurrency(parseFloat(account.current_balance || 0)) }}
             </div>
             <div class="text-xs text-gray-500">
               {{ account.currency }}
@@ -214,16 +214,14 @@ const getCurrentMonthRange = () => {
 // Fetch dashboard data
 const fetchDashboardData = async () => {
   try {
-    // Fetch accounts summary to get total balance
-    const summaryResponse = await getAccountsSummary();
-    if (summaryResponse.success && summaryResponse.data) {
-      totalBalance.value = parseFloat(summaryResponse.data.total_balance || '0');
-    }
-
     // Fetch all accounts to display individually
     const accountsResponse = await getAccounts({ is_active: true });
     if (accountsResponse.success && accountsResponse.data) {
       accounts.value = accountsResponse.data.results;
+      // Calculate total balance from current balances (excluant les transactions futures)
+      totalBalance.value = accounts.value.reduce((sum, account) => {
+        return sum + parseFloat(account.current_balance || 0);
+      }, 0);
     }
 
     // Fetch recent transactions

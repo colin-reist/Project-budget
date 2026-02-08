@@ -44,8 +44,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """
-        Retourne des statistiques sur les transactions
+        Retourne des statistiques sur les transactions (excluant les transactions futures)
         """
+        from datetime import date
         # Filtres de date
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -56,6 +57,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
+
+        # Exclure les transactions futures par défaut
+        queryset = queryset.filter(date__lte=date.today())
 
         # Calcul des totaux par type
         stats = queryset.values('type').annotate(
@@ -84,8 +88,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def by_category(self, request):
         """
-        Retourne les dépenses/revenus par catégorie
+        Retourne les dépenses/revenus par catégorie (excluant les transactions futures)
         """
+        from datetime import date
         transaction_type = request.query_params.get('type', 'expense')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -96,6 +101,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
+
+        # Exclure les transactions futures par défaut
+        queryset = queryset.filter(date__lte=date.today())
 
         # Grouper par catégorie
         stats = queryset.values(
@@ -123,11 +131,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def monthly_summary(self, request):
         """
-        Retourne un résumé mensuel des transactions
+        Retourne un résumé mensuel des transactions (excluant les transactions futures)
         """
+        from datetime import date as date_class
         year = request.query_params.get('year', datetime.now().year)
 
         queryset = self.get_queryset().filter(date__year=year)
+
+        # Exclure les transactions futures par défaut
+        queryset = queryset.filter(date__lte=date_class.today())
 
         # Grouper par mois et type
         months_data = {}

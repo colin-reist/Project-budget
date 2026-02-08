@@ -46,6 +46,7 @@ class Budget(models.Model):
     def get_spent_amount(self):
         """
         Calcule le montant dépensé pour ce budget sur la période en cours
+        (exclut les transactions avec une date future)
         """
         from transactions.models import Transaction
         from datetime import date, timedelta
@@ -72,7 +73,10 @@ class Budget(models.Model):
         if self.end_date and end > self.end_date:
             end = self.end_date
 
-        # Calculer le total des dépenses
+        # Calculer le total des dépenses (excluant les transactions futures)
+        # Ne compter que les transactions avec une date <= aujourd'hui
+        end = min(end, today)
+
         total = Transaction.objects.filter(
             user=self.user,
             category=self.category,

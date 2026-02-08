@@ -43,7 +43,8 @@ class Account(models.Model):
         max_digits=15,
         decimal_places=2,
         default=0.00,
-        verbose_name='Solde'
+        verbose_name='Solde',
+        help_text='Champ legacy - utiliser get_current_balance() ou get_projected_balance() pour obtenir le solde'
     )
     currency = models.CharField(
         max_length=3,
@@ -88,3 +89,69 @@ class Account(models.Model):
         """
         self.balance += amount
         self.save(update_fields=['balance', 'updated_at'])
+
+    def get_current_balance(self):
+        """
+        Retourne le solde actuel en excluant les transactions futures
+        """
+        from datetime import date
+        from transactions.models import Transaction
+        from decimal import Decimal
+
+        today = date.today()
+
+        # Calculer le solde à partir des transactions passées
+        transactions = Transaction.objects.filter(
+            account=self,
+            date__lte=today
+        )
+
+        balance = Decimal('0.00')
+        for transaction in transactions:
+            if transaction.type == 'income':
+                balance += transaction.amount
+            elif transaction.type == 'expense':
+                balance -= transaction.amount
+            elif transaction.type == 'transfer' and transaction.destination_account:
+                balance -= transaction.amount
+
+        # Ajouter les transferts reçus
+        incoming_transfers = Transaction.objects.filter(
+            destination_account=self,
+            type='transfer',
+            date__lte=today
+        )
+        for transfer in incoming_transfers:
+            balance += transfer.amount
+
+        return balance
+
+    def get_projected_balance(self):
+        """
+        Retourne le solde projeté (incluant les transactions futures)
+        Calcule le solde en incluant TOUTES les transactions (même les futures)
+        """
+        from transactions.models import Transaction
+        from decimal import Decimal
+
+        # Calculer le solde à partir de TOUTES les transactions
+        transactions = Transaction.objects.filter(account=self)
+
+        balance = Decimal('0.00')
+        for transaction in transactions:
+            if transaction.type == 'income':
+                balance += transaction.amount
+            elif transaction.type == 'expense':
+                balance -= transaction.amount
+            elif transaction.type == 'transfer' and transaction.destination_account:
+                balance -= transaction.amount
+
+        # Ajouter les transferts reçus
+        incoming_transfers = Transaction.objects.filter(
+            destination_account=self,
+            type='transfer'
+        )
+        for transfer in incoming_transfers:
+            balance += transfer.amount
+
+        return balance

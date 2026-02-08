@@ -120,49 +120,13 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Lors de la sauvegarde, met à jour le solde du compte
+        Sauvegarde la transaction sans mettre à jour le solde du compte
+        (le solde est calculé dynamiquement à partir des transactions)
         """
-        is_new = self.pk is None
-        old_instance = None if is_new else Transaction.objects.get(pk=self.pk)
-
         super().save(*args, **kwargs)
-
-        # Mise à jour du solde du compte
-        if is_new:
-            self._update_account_balance()
-        elif old_instance:
-            # Annuler l'ancien impact
-            self._reverse_account_balance(old_instance)
-            # Appliquer le nouveau
-            self._update_account_balance()
 
     def delete(self, *args, **kwargs):
         """
-        Lors de la suppression, met à jour le solde du compte
+        Supprime la transaction (le solde est recalculé dynamiquement)
         """
-        self._reverse_account_balance(self)
         super().delete(*args, **kwargs)
-
-    def _update_account_balance(self):
-        """
-        Met à jour le solde du compte selon le type de transaction
-        """
-        if self.type == 'income':
-            self.account.update_balance(self.amount)
-        elif self.type == 'expense':
-            self.account.update_balance(-self.amount)
-        elif self.type == 'transfer' and self.destination_account:
-            self.account.update_balance(-self.amount)
-            self.destination_account.update_balance(self.amount)
-
-    def _reverse_account_balance(self, old_transaction):
-        """
-        Annule l'impact d'une transaction sur le solde
-        """
-        if old_transaction.type == 'income':
-            old_transaction.account.update_balance(-old_transaction.amount)
-        elif old_transaction.type == 'expense':
-            old_transaction.account.update_balance(old_transaction.amount)
-        elif old_transaction.type == 'transfer' and old_transaction.destination_account:
-            old_transaction.account.update_balance(old_transaction.amount)
-            old_transaction.destination_account.update_balance(-old_transaction.amount)

@@ -40,7 +40,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def summary(self, request):
         """
-        Retourne un résumé des comptes (total par devise)
+        Retourne un résumé des comptes (total par devise, excluant les transactions futures)
         """
         accounts = self.get_queryset().filter(is_active=True)
 
@@ -54,13 +54,13 @@ class AccountViewSet(viewsets.ModelViewSet):
                     'by_type': {}
                 }
 
-            summary[currency]['total'] += float(account.balance)
+            summary[currency]['total'] += float(account.get_current_balance())
             summary[currency]['count'] += 1
 
             account_type = account.get_account_type_display()
             if account_type not in summary[currency]['by_type']:
                 summary[currency]['by_type'][account_type] = 0
-            summary[currency]['by_type'][account_type] += float(account.balance)
+            summary[currency]['by_type'][account_type] += float(account.get_current_balance())
 
         return Response(summary)
 

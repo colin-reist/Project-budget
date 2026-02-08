@@ -68,7 +68,20 @@
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400">Solde actuel</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatCurrency(parseFloat(account.balance), account.currency) }}
+              {{ formatCurrency(parseFloat(account.current_balance), account.currency) }}
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              (Excluant les transactions futures)
+            </p>
+          </div>
+
+          <div v-if="account.projected_balance !== account.current_balance" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Solde projeté</p>
+            <p class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+              {{ formatCurrency(parseFloat(account.projected_balance), account.currency) }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              (Incluant les transactions futures)
             </p>
           </div>
 
@@ -281,7 +294,7 @@ const openEditModal = (account: Account) => {
   form.value = {
     name: account.name,
     account_type: account.account_type,
-    balance: account.balance,
+    balance: account.current_balance.toString(),
     currency: account.currency,
     description: account.description || '',
   };

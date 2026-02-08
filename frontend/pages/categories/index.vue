@@ -375,7 +375,7 @@ onMounted(() => {
 
           <!-- Preview -->
           <UFormGroup label="Aperçu">
-            <div class="p-4 bg-gray-50 rounded-lg">
+            <div class="p-4 bg-warning rounded-lg border">
               <div class="flex items-center gap-3">
                 <div
                   class="w-12 h-12 rounded-full flex items-center justify-center"

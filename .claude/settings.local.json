@@ -17,7 +17,9 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcwMTMwMzQzLCJpYXQiOjE3NzAxMjk0NDMsImp0aSI6Ijc4NzczMDI0ZDYwYTQwOGJiYjU3Njk1OTRiODdkY2VhIiwidXNlcl9pZCI6N30.7sfzDGp5-pxrPeuAnF7UcWVCmdz549_6Zz8A3mFJjRM\")",
       "Bash(python manage.py startapp:*)",
       "Bash(python -c:*)",
-      "Bash(python manage.py check:*)"
+      "Bash(python manage.py check:*)",
+      "Bash(py:*)",
+      "Bash(python -m py_compile:*)"
     ]
   }
 }
