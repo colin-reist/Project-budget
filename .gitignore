@@ -1,0 +1,88 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+/backend/staticfiles/
+/backend/media/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.nuxt/
+.output/
+.cache/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.env
+
+# Backups
+/backups/*.sql
+/backups/*.sql.gz
+/backups/*.tar.gz
+
+# Logs
+*.log
+logs/
+
+# SSL Certificates (ne pas commiter en production)
+/nginx/ssl/*.key
+/nginx/ssl/*.pem
+/nginx/ssl/*.crt
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
