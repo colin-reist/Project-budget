@@ -1,6 +1,9 @@
 from django.db import models
 from django.conf import settings
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Budget(models.Model):
@@ -21,7 +24,10 @@ class Budget(models.Model):
     category = models.ForeignKey(
         'categories.Category',
         on_delete=models.CASCADE,
-        related_name='budgets'
+        related_name='budgets',
+        null=True,
+        blank=True,
+        help_text='Catégorie associée (non requis pour les objectifs d\'épargne)'
     )
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
@@ -33,12 +39,16 @@ class Budget(models.Model):
         help_text="Pourcentage du budget à partir duquel une alerte est déclenchée"
     )
     is_active = models.BooleanField(default=True)
+    is_savings_goal = models.BooleanField(
+        default=False,
+        verbose_name='Objectif d\'épargne',
+        help_text='Si coché, ce budget suit les transferts vers comptes épargne au lieu des dépenses'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ['user', 'category', 'period', 'start_date']
 
     def __str__(self):
         return f"{self.name} - {self.amount} ({self.get_period_display()})"
@@ -47,8 +57,10 @@ class Budget(models.Model):
         """
         Calcule le montant dépensé pour ce budget sur la période en cours
         (exclut les transactions avec une date future)
+        Pour les objectifs d'épargne, calcule les transferts vers comptes épargne
         """
         from transactions.models import Transaction
+        from accounts.models import Account
         from datetime import date, timedelta
 
         today = date.today()
@@ -77,13 +89,54 @@ class Budget(models.Model):
         # Ne compter que les transactions avec une date <= aujourd'hui
         end = min(end, today)
 
-        total = Transaction.objects.filter(
-            user=self.user,
-            category=self.category,
-            type='expense',
-            date__gte=start,
-            date__lte=end
-        ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+        # Si c'est un objectif d'épargne, calculer les transferts vers comptes épargne
+        if self.is_savings_goal:
+            logger.debug(f"📊 Calcul objectif d'épargne: {self.name}")
+            logger.debug(f"   Période: {start} à {end}")
+
+            # Récupérer tous les comptes épargne de l'utilisateur
+            savings_accounts = Account.objects.filter(
+                user=self.user,
+                account_type='savings',
+                is_active=True
+            )
+
+            logger.debug(f"   Comptes épargne trouvés: {savings_accounts.count()}")
+            for acc in savings_accounts:
+                logger.debug(f"     - {acc.name} (ID: {acc.id}, type: {acc.account_type})")
+
+            # Calculer le total des transferts vers ces comptes
+            transfers = Transaction.objects.filter(
+                user=self.user,
+                type='transfer',
+                destination_account__in=savings_accounts,
+                date__gte=start,
+                date__lte=end
+            )
+
+            logger.debug(f"   Transferts trouvés: {transfers.count()}")
+            for trans in transfers:
+                logger.debug(f"     - Date: {trans.date}, Montant: {trans.amount}, Vers: {trans.destination_account.name if trans.destination_account else 'N/A'}")
+
+            total = transfers.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+            logger.debug(f"   💰 Total épargné: {total} CHF")
+        else:
+            # Budget normal: calculer les dépenses de la catégorie
+            logger.debug(f"📊 Calcul budget normal: {self.name}")
+            logger.debug(f"   Catégorie: {self.category.name if self.category else 'N/A'}")
+            logger.debug(f"   Période: {start} à {end}")
+
+            expenses = Transaction.objects.filter(
+                user=self.user,
+                category=self.category,
+                type='expense',
+                date__gte=start,
+                date__lte=end
+            )
+
+            logger.debug(f"   Dépenses trouvées: {expenses.count()}")
+            total = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+            logger.debug(f"   💸 Total dépensé: {total} CHF")
 
         return total
 

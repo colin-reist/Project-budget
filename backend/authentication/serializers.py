@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import UserProfile
 
 User = get_user_model()
 
@@ -112,3 +113,28 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user'] = UserSerializer(self.user).data
 
         return data
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for UserProfile model
+    """
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    available_budget_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'id',
+            'user',
+            'monthly_income',
+            'currency',
+            'available_budget_info',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'available_budget_info']
+
+    def get_available_budget_info(self, obj):
+        """Get available budget information"""
+        return obj.get_available_budget()

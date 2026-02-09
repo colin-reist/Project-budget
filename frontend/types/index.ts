@@ -111,14 +111,29 @@ export interface RecurrenceRule {
 export interface Budget {
   id: number;
   user: number;
-  category: number;
+  category: number | null;
+  category_details?: {
+    id: number;
+    name: string;
+    icon: string;
+    color: string;
+    type: string;
+    is_active: boolean;
+  } | null;
   name: string;
   amount: string;
   period: 'weekly' | 'monthly' | 'yearly';
+  period_display?: string;
   start_date: string;
   end_date?: string;
   alert_threshold: number;
   is_active: boolean;
+  is_savings_goal: boolean;
+  spent_amount?: number;
+  remaining_amount?: number;
+  percentage_used?: number;
+  is_over_budget?: boolean;
+  is_alert_triggered?: boolean;
   created_at: string;
   updated_at: string;
 }

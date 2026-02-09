@@ -45,6 +45,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def statistics(self, request):
         """
         Retourne des statistiques sur les transactions (excluant les transactions futures)
+        Inclut aussi les montants des transactions futures jusqu'à la fin de la période
         """
         from datetime import date
         # Filtres de date
@@ -58,27 +59,39 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
 
-        # Exclure les transactions futures par défaut
-        queryset = queryset.filter(date__lte=date.today())
+        # Transactions actuelles (jusqu'à aujourd'hui)
+        current_queryset = queryset.filter(date__lte=date.today())
 
-        # Calcul des totaux par type
-        stats = queryset.values('type').annotate(
+        # Calcul des totaux par type pour les transactions actuelles
+        stats = current_queryset.values('type').annotate(
             total=Sum('amount'),
             count=Count('id')
         )
 
         # Organiser les résultats
         result = {
-            'income': {'total': 0, 'count': 0},
-            'expense': {'total': 0, 'count': 0},
-            'transfer': {'total': 0, 'count': 0},
+            'income': {'total': 0, 'count': 0, 'future': 0},
+            'expense': {'total': 0, 'count': 0, 'future': 0},
+            'transfer': {'total': 0, 'count': 0, 'future': 0},
         }
 
         for stat in stats:
             result[stat['type']] = {
                 'total': float(stat['total']),
-                'count': stat['count']
+                'count': stat['count'],
+                'future': 0
             }
+
+        # Calcul des transactions futures (après aujourd'hui jusqu'à la fin de la période)
+        future_queryset = queryset.filter(date__gt=date.today())
+        future_stats = future_queryset.values('type').annotate(
+            total=Sum('amount'),
+            count=Count('id')
+        )
+
+        for stat in future_stats:
+            if stat['type'] in result:
+                result[stat['type']]['future'] = float(stat['total'])
 
         # Calcul du solde net
         result['net'] = result['income']['total'] - result['expense']['total']

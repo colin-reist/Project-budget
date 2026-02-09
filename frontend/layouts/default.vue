@@ -58,7 +58,16 @@
           </div>
 
           <!-- User Menu -->
-          <div v-if="isAuthenticated" class="flex items-center">
+          <div v-if="isAuthenticated" class="flex items-center gap-3">
+            <!-- Theme Toggle Button -->
+            <UButton
+              :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
+              color="gray"
+              variant="ghost"
+              aria-label="Toggle theme"
+              @click="toggleTheme"
+            />
+
             <UDropdown :items="userMenuItems" :popper="{ placement: 'bottom-end' }">
               <UButton
                 color="white"
@@ -81,6 +90,21 @@
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth();
 
+// Theme management
+const colorMode = useColorMode();
+const isDark = computed({
+  get() {
+    return colorMode.value === 'dark';
+  },
+  set() {
+    colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
+  }
+});
+
+const toggleTheme = () => {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
+};
+
 const userMenuItems = [
   [
     {
@@ -90,6 +114,11 @@ const userMenuItems = [
     },
   ],
   [
+    {
+      label: 'Profil',
+      icon: 'i-heroicons-user-circle',
+      click: () => navigateTo('/profile'),
+    },
     {
       label: 'Paramètres',
       icon: 'i-heroicons-cog-6-tooth',

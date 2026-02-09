@@ -4,7 +4,8 @@ from .views import (
     RegisterView,
     login_view,
     user_profile_view,
-    logout_view
+    logout_view,
+    UserProfileViewSet
 )
 
 app_name = 'authentication'
@@ -24,4 +25,8 @@ urlpatterns = [
 
     # JWT token refresh
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+
+    # User financial profile
+    path('profile/me/', UserProfileViewSet.as_view({'get': 'me'}), name='profile-me'),
+    path('profile/update/', UserProfileViewSet.as_view({'put': 'update_me', 'patch': 'update_me'}), name='profile-update'),
 ]

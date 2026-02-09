@@ -1,10 +1,11 @@
-from rest_framework import status, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, generics, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
-from .serializers import RegisterSerializer, UserSerializer, LoginSerializer
+from .serializers import RegisterSerializer, UserSerializer, LoginSerializer, UserProfileSerializer
+from .models import UserProfile
 
 User = get_user_model()
 
@@ -173,3 +174,36 @@ def logout_view(request):
         return Response({
             'error': str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user profile (income, available budget)
+    """
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return profile for current user only"""
+        return UserProfile.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        """Get or create profile for current user"""
+        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        return profile
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """Get current user's profile"""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['put', 'patch'])
+    def update_me(self, request):
+        """Update current user's profile"""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
