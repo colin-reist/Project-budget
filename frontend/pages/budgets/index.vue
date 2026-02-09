@@ -589,10 +589,15 @@ onMounted(() => {
             <!-- Progress -->
             <div>
               <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-600">Épargné</span>
-                <span class="text-sm font-semibold">
-                  {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
-                </span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">Épargné</span>
+                <div class="text-right">
+                  <div class="text-sm font-semibold">
+                    {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
+                  </div>
+                  <div v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" class="text-xs text-green-600 dark:text-green-400">
+                    Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
+                  </div>
+                </div>
               </div>
               <UProgress
                 :value="budget.percentage_used ?? 0"
@@ -601,15 +606,24 @@ onMounted(() => {
               />
               <p class="mt-1 text-xs text-gray-500">
                 {{ (budget.percentage_used ?? 0).toFixed(1) }}% de l'objectif
+                <span v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" class="text-green-600 dark:text-green-400">
+                  ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
+                </span>
               </p>
             </div>
 
             <!-- Remaining -->
             <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <span class="text-sm text-gray-600">Encore à épargner</span>
-              <span class="text-lg font-bold" :class="(budget.remaining_amount ?? 0) >= 0 ? 'text-gray-900 dark:text-white' : 'text-green-600'">
-                {{ Math.abs(budget.remaining_amount ?? 0).toFixed(2) }} CHF
-              </span>
+              <span class="text-sm text-gray-600 dark:text-gray-400">Encore à épargner</span>
+              <div class="text-right">
+                <div class="text-lg font-bold" :class="(budget.remaining_amount ?? 0) >= 0 ? 'text-gray-900 dark:text-white' : 'text-green-600'">
+                  {{ Math.abs(budget.remaining_amount ?? 0).toFixed(2) }} CHF
+                </div>
+                <div v-if="(budget.projected_remaining_amount ?? 0) !== (budget.remaining_amount ?? 0)"
+                     class="text-xs text-green-600 dark:text-green-400">
+                  {{ Math.abs(budget.projected_remaining_amount ?? 0).toFixed(2) }} CHF projeté
+                </div>
+              </div>
             </div>
 
             <!-- Success Message -->
@@ -617,6 +631,12 @@ onMounted(() => {
               <div class="flex items-center">
                 <UIcon name="i-heroicons-check-circle" class="h-5 w-5 text-green-600 mr-2" />
                 <span class="text-sm text-green-700 dark:text-green-400">Objectif atteint! 🎉</span>
+              </div>
+            </div>
+            <div v-else-if="(budget.projected_percentage_used ?? 0) >= 100 && (budget.percentage_used ?? 0) < 100" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+              <div class="flex items-center">
+                <UIcon name="i-heroicons-information-circle" class="h-5 w-5 text-green-600 mr-2" />
+                <span class="text-sm text-green-700 dark:text-green-400">Avec les transferts futurs, vous atteindrez votre objectif! 🎯</span>
               </div>
             </div>
 
@@ -692,9 +712,14 @@ onMounted(() => {
           <div>
             <div class="flex justify-between items-center mb-2">
               <span class="text-sm text-gray-600">Dépensé</span>
-              <span class="text-sm font-semibold">
-                {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
-              </span>
+              <div class="text-right">
+                <div class="text-sm font-semibold">
+                  {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
+                </div>
+                <div v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" class="text-xs text-blue-600 dark:text-blue-400">
+                  Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
+                </div>
+              </div>
             </div>
             <UProgress
               :value="budget.percentage_used ?? 0"
@@ -703,29 +728,55 @@ onMounted(() => {
             />
             <p class="mt-1 text-xs text-gray-500">
               {{ (budget.percentage_used ?? 0).toFixed(1) }}% utilisé
+              <span v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" class="text-blue-600 dark:text-blue-400">
+                ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
+              </span>
             </p>
           </div>
 
           <!-- Remaining -->
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <span class="text-sm text-gray-600">Restant</span>
-            <span class="text-lg font-bold" :class="(budget.remaining_amount ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ (budget.remaining_amount ?? 0).toFixed(2) }} CHF
-            </span>
+          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Restant</span>
+            <div class="text-right">
+              <div class="text-lg font-bold" :class="(budget.remaining_amount ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ (budget.remaining_amount ?? 0).toFixed(2) }} CHF
+              </div>
+              <div v-if="(budget.projected_remaining_amount ?? 0) !== (budget.remaining_amount ?? 0)"
+                   class="text-xs"
+                   :class="(budget.projected_remaining_amount ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                {{ (budget.projected_remaining_amount ?? 0).toFixed(2) }} CHF projeté
+              </div>
+            </div>
           </div>
 
           <!-- Alerts -->
-          <div v-if="budget.is_over_budget" class="bg-red-50 border border-red-200 rounded-lg p-3">
+          <div v-if="budget.is_over_budget" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <div class="flex items-center">
               <UIcon name="i-heroicons-exclamation-circle" class="h-5 w-5 text-red-600 mr-2" />
-              <span class="text-sm text-red-700">Budget dépassé !</span>
+              <span class="text-sm text-red-700 dark:text-red-400">Budget dépassé !</span>
             </div>
           </div>
-          <div v-else-if="budget.is_alert_triggered" class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div v-else-if="budget.is_projected_over_budget && !budget.is_over_budget" class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
             <div class="flex items-center">
               <UIcon name="i-heroicons-exclamation-triangle" class="h-5 w-5 text-orange-600 mr-2" />
-              <span class="text-sm text-orange-700">
+              <span class="text-sm text-orange-700 dark:text-orange-400">
+                Attention : avec les paiements futurs, ce budget sera dépassé
+              </span>
+            </div>
+          </div>
+          <div v-else-if="budget.is_alert_triggered" class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+            <div class="flex items-center">
+              <UIcon name="i-heroicons-exclamation-triangle" class="h-5 w-5 text-orange-600 mr-2" />
+              <span class="text-sm text-orange-700 dark:text-orange-400">
                 Attention : {{ budget.alert_threshold }}% atteint
+              </span>
+            </div>
+          </div>
+          <div v-else-if="(budget.projected_percentage_used ?? 0) >= (budget.alert_threshold ?? 80) && !(budget.is_alert_triggered)" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            <div class="flex items-center">
+              <UIcon name="i-heroicons-information-circle" class="h-5 w-5 text-yellow-600 mr-2" />
+              <span class="text-sm text-yellow-700 dark:text-yellow-400">
+                Avec les paiements futurs, le seuil de {{ budget.alert_threshold }}% sera atteint
               </span>
             </div>
           </div>

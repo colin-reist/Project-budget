@@ -99,13 +99,19 @@ class BudgetListSerializer(serializers.ModelSerializer):
     remaining_amount = serializers.SerializerMethodField()
     percentage_used = serializers.SerializerMethodField()
     is_over_budget = serializers.SerializerMethodField()
+    projected_amount = serializers.SerializerMethodField()
+    projected_remaining_amount = serializers.SerializerMethodField()
+    projected_percentage_used = serializers.SerializerMethodField()
+    is_projected_over_budget = serializers.SerializerMethodField()
 
     class Meta:
         model = Budget
         fields = [
             'id', 'category', 'category_details', 'name', 'amount', 'period',
             'period_display', 'start_date', 'end_date', 'is_active', 'is_savings_goal',
-            'spent_amount', 'remaining_amount', 'percentage_used', 'is_over_budget', 'created_at'
+            'spent_amount', 'remaining_amount', 'percentage_used', 'is_over_budget',
+            'projected_amount', 'projected_remaining_amount', 'projected_percentage_used',
+            'is_projected_over_budget', 'created_at'
         ]
 
     def get_spent_amount(self, obj):
@@ -119,3 +125,15 @@ class BudgetListSerializer(serializers.ModelSerializer):
 
     def get_is_over_budget(self, obj):
         return obj.is_over_budget()
+
+    def get_projected_amount(self, obj):
+        return float(obj.get_projected_amount())
+
+    def get_projected_remaining_amount(self, obj):
+        return float(obj.get_projected_remaining_amount())
+
+    def get_projected_percentage_used(self, obj):
+        return round(obj.get_projected_percentage_used(), 2)
+
+    def get_is_projected_over_budget(self, obj):
+        return obj.is_projected_over_budget()

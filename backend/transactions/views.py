@@ -60,7 +60,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
 
         # Transactions actuelles (jusqu'à aujourd'hui)
-        current_queryset = queryset.filter(date__lte=date.today())
+        # Exclure les ajustements des statistiques
+        current_queryset = queryset.filter(date__lte=date.today()).exclude(type='adjustment')
 
         # Calcul des totaux par type pour les transactions actuelles
         stats = current_queryset.values('type').annotate(

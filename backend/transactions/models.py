@@ -5,12 +5,13 @@ from decimal import Decimal
 
 class Transaction(models.Model):
     """
-    Transaction financière (revenu, dépense, ou transfert)
+    Transaction financière (revenu, dépense, transfert, ou ajustement)
     """
     TYPE_CHOICES = [
         ('income', 'Revenu'),
         ('expense', 'Dépense'),
         ('transfer', 'Transfert'),
+        ('adjustment', 'Ajustement de solde'),
     ]
 
     user = models.ForeignKey(

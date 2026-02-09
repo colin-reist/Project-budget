@@ -114,6 +114,14 @@ class Account(models.Model):
                 balance -= transaction.amount
             elif transaction.type == 'transfer' and transaction.destination_account:
                 balance -= transaction.amount
+            elif transaction.type == 'adjustment':
+                # Lire le signe depuis les notes
+                if transaction.notes and 'ADJUSTMENT:' in transaction.notes:
+                    sign = transaction.notes.split('ADJUSTMENT:')[1].strip()
+                    if sign.startswith('+'):
+                        balance += transaction.amount
+                    else:
+                        balance -= transaction.amount
 
         # Ajouter les transferts reçus
         incoming_transfers = Transaction.objects.filter(
@@ -145,6 +153,14 @@ class Account(models.Model):
                 balance -= transaction.amount
             elif transaction.type == 'transfer' and transaction.destination_account:
                 balance -= transaction.amount
+            elif transaction.type == 'adjustment':
+                # Lire le signe depuis les notes
+                if transaction.notes and 'ADJUSTMENT:' in transaction.notes:
+                    sign = transaction.notes.split('ADJUSTMENT:')[1].strip()
+                    if sign.startswith('+'):
+                        balance += transaction.amount
+                    else:
+                        balance -= transaction.amount
 
         # Ajouter les transferts reçus
         incoming_transfers = Transaction.objects.filter(

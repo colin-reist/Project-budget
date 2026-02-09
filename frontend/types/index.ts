@@ -134,6 +134,10 @@ export interface Budget {
   percentage_used?: number;
   is_over_budget?: boolean;
   is_alert_triggered?: boolean;
+  projected_amount?: number;
+  projected_remaining_amount?: number;
+  projected_percentage_used?: number;
+  is_projected_over_budget?: boolean;
   created_at: string;
   updated_at: string;
 }

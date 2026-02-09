@@ -167,13 +167,26 @@
             />
           </UFormGroup>
 
-          <UFormGroup label="Solde initial" required>
+          <UFormGroup v-if="!editingAccount" label="Solde initial" required>
             <UInput
               v-model="form.balance"
               type="number"
               step="0.01"
               placeholder="0.00"
             />
+            <template #help>
+              <span class="text-xs text-gray-500">Le solde initial de votre compte</span>
+            </template>
+          </UFormGroup>
+
+          <UFormGroup v-else label="Solde actuel">
+            <UInput
+              :model-value="formatCurrency(parseFloat(form.balance), form.currency)"
+              disabled
+            />
+            <template #help>
+              <span class="text-xs text-gray-500">Le solde est calculé automatiquement à partir des transactions. Pour l'ajuster, créez une transaction de type revenu ou dépense.</span>
+            </template>
           </UFormGroup>
 
           <UFormGroup label="Devise" required>
@@ -309,7 +322,9 @@ const handleSubmit = async () => {
   try {
     let result;
     if (editingAccount.value) {
-      result = await updateAccount(editingAccount.value.id, form.value);
+      // Lors de la modification, ne pas envoyer le champ balance
+      const { balance, ...accountData } = form.value;
+      result = await updateAccount(editingAccount.value.id, accountData);
     } else {
       result = await createAccount(form.value);
     }
