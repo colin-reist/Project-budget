@@ -25,18 +25,24 @@ export const useWebAuthn = () => {
     try {
       // Get registration options from server
       const options = await apiFetch<PublicKeyCredentialCreationOptionsJSON>(
-        '/auth/webauthn/register/begin/',
+        '/api/v1/auth/webauthn/register/begin/',
         {
           method: 'POST',
           body: { username },
         }
       );
 
+      // Verify options have required fields
+      if (!options || !options.challenge) {
+        console.error('Invalid options received:', options);
+        throw new Error('Invalid registration options received from server');
+      }
+
       // Start registration with browser WebAuthn API
       const credential = await startRegistration(options);
 
       // Send credential to server for verification
-      const response = await apiFetch('/auth/webauthn/register/complete/', {
+      const response = await apiFetch('/api/v1/auth/webauthn/register/complete/', {
         method: 'POST',
         body: {
           username,
@@ -58,7 +64,7 @@ export const useWebAuthn = () => {
     try {
       // Get authentication options from server
       const options = await apiFetch<PublicKeyCredentialRequestOptionsJSON>(
-        '/auth/webauthn/login/begin/',
+        '/api/v1/auth/webauthn/login/begin/',
         {
           method: 'POST',
         }
@@ -71,7 +77,8 @@ export const useWebAuthn = () => {
       const response = await apiFetch<{
         access: string;
         refresh: string;
-      }>('/auth/webauthn/login/complete/', {
+        user: any;
+      }>('/api/v1/auth/webauthn/login/complete/', {
         method: 'POST',
         body: { credential },
       });
@@ -80,8 +87,8 @@ export const useWebAuthn = () => {
       accessToken.value = response.access;
       refreshToken.value = response.refresh;
 
-      // Fetch user data
-      await fetchUser();
+      // Fetch user data with the new access token
+      await fetchUser(response.access);
 
       return { success: true };
     } catch (error: any) {
@@ -95,7 +102,7 @@ export const useWebAuthn = () => {
 
   const listCredentials = async () => {
     try {
-      const credentials = await apiFetch('/auth/webauthn/credentials/');
+      const credentials = await apiFetch('/api/v1/auth/webauthn/credentials/');
       return { success: true, data: credentials };
     } catch (error: any) {
       console.error('List credentials error:', error);
@@ -108,7 +115,7 @@ export const useWebAuthn = () => {
 
   const deleteCredential = async (credentialId: number) => {
     try {
-      await apiFetch(`/auth/webauthn/credentials/${credentialId}/`, {
+      await apiFetch(`/api/v1/auth/webauthn/credentials/${credentialId}/`, {
         method: 'DELETE',
       });
       return { success: true };

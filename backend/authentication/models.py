@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from .api_token import APIToken, PendingAlert  # noqa: F401
 
 
 class User(AbstractUser):

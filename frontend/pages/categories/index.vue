@@ -139,12 +139,22 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDelete = async (category: Category) => {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?`)) return
+// Confirm modal state
+const showConfirmDelete = ref(false)
+const categoryToDelete = ref<Category | null>(null)
+
+const handleDelete = (category: Category) => {
+  categoryToDelete.value = category
+  showConfirmDelete.value = true
+}
+
+const executeDelete = async () => {
+  if (!categoryToDelete.value) return
 
   loading.value = true
-  const result = await deleteCategory(category.id)
+  const result = await deleteCategory(categoryToDelete.value.id)
   loading.value = false
+  categoryToDelete.value = null
 
   if (result.success) {
     toast.add({
@@ -291,6 +301,15 @@ onMounted(() => {
         </div>
       </UCard>
     </div>
+
+    <!-- Confirm Delete Modal -->
+    <ConfirmModal
+      v-model="showConfirmDelete"
+      title="Supprimer la catégorie"
+      :message="`Êtes-vous sûr de vouloir supprimer la catégorie « ${categoryToDelete?.name} » ? Elle est peut-être utilisée par des transactions.`"
+      confirm-label="Supprimer"
+      @confirm="executeDelete"
+    />
 
     <!-- Category Modal -->
     <UModal v-model="showModal" :ui="{ width: 'sm:max-w-lg' }">

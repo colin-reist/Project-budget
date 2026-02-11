@@ -19,6 +19,26 @@
       </UButton>
     </div>
 
+    <!-- Pending Alerts Banner -->
+    <div v-if="pendingAlerts.length > 0" class="mb-6 space-y-2">
+      <div
+        v-for="alert in pendingAlerts"
+        :key="alert.id"
+        class="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <UIcon name="i-heroicons-device-phone-mobile" class="h-5 w-5 text-orange-600 flex-shrink-0" />
+          <span class="text-sm text-orange-700 dark:text-orange-400">
+            Transaction iOS : "{{ alert.payload.label }}" ({{ formatCurrency(parseFloat(alert.payload.amount)) }}) &mdash; catégorie "{{ alert.payload.category_name }}" non trouvée.
+          </span>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <UButton size="sm" variant="soft" @click="openCorrectionModal(alert)">Corriger</UButton>
+          <UButton size="sm" variant="ghost" color="gray" @click="handleDismissAlert(alert.id)">Ignorer</UButton>
+        </div>
+      </div>
+    </div>
+
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
       <UCard>
@@ -144,19 +164,94 @@
       </div>
     </div>
 
-    <!-- Charts and Recent Transactions -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Expenses Chart Placeholder -->
+    <!-- Budget vs Réel Section -->
+    <div v-if="budgetDashData && budgetDashData.categories.length > 0" class="mb-8">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Budget vs Réel</h2>
+
+      <!-- Soldes résumé -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <p class="text-sm text-gray-600 dark:text-gray-400">Solde prévisionnel</p>
+          <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
+            {{ formatCurrency(budgetDashData.solde_previsionnel) }}
+          </p>
+        </div>
+        <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <p class="text-sm text-gray-600 dark:text-gray-400">Solde réel</p>
+          <p class="text-xl font-bold text-green-600 dark:text-green-400">
+            {{ formatCurrency(budgetDashData.solde_reel) }}
+          </p>
+        </div>
+        <div :class="[
+          'p-4 rounded-lg border',
+          budgetDashData.ecart >= 0
+            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+        ]">
+          <p class="text-sm text-gray-600 dark:text-gray-400">Écart</p>
+          <p :class="[
+            'text-xl font-bold',
+            budgetDashData.ecart >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          ]">
+            {{ budgetDashData.ecart >= 0 ? '+' : '' }}{{ formatCurrency(budgetDashData.ecart) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Graphique -->
+      <UCard class="mb-4">
+        <template #header>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Dépenses par catégorie</h3>
+        </template>
+        <BudgetVsActualChart :data="budgetDashData.categories" />
+      </UCard>
+
+      <!-- Tableau détaillé -->
       <UCard>
         <template #header>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Dépenses par catégorie
-          </h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Détail par catégorie</h3>
         </template>
-        <div class="h-64 flex items-center justify-center text-gray-500">
-          Graphique des dépenses (D3.js)
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="text-left py-2 px-3 font-medium text-gray-500">Catégorie</th>
+                <th class="text-right py-2 px-3 font-medium text-gray-500">Prévu</th>
+                <th class="text-right py-2 px-3 font-medium text-gray-500">Réel</th>
+                <th class="text-right py-2 px-3 font-medium text-gray-500">Écart</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="cat in budgetDashData.categories"
+                :key="cat.category_id"
+                class="border-b border-gray-100 dark:border-gray-800"
+              >
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <UIcon :name="cat.category_icon" class="h-4 w-4" />
+                    <span class="text-gray-900 dark:text-white">{{ cat.category_name }}</span>
+                    <UBadge v-if="cat.unbudgeted" color="gray" variant="subtle" size="xs">Non budgété</UBadge>
+                  </div>
+                </td>
+                <td class="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
+                  {{ cat.prevu > 0 ? formatCurrency(cat.prevu) : '-' }}
+                </td>
+                <td :class="['py-2 px-3 text-right font-medium', cat.is_over ? 'text-red-600' : 'text-gray-900 dark:text-white']">
+                  {{ formatCurrency(cat.reel) }}
+                </td>
+                <td :class="['py-2 px-3 text-right font-medium', cat.ecart >= 0 ? 'text-green-600' : 'text-red-600']">
+                  {{ cat.ecart >= 0 ? '+' : '' }}{{ formatCurrency(cat.ecart) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </UCard>
+    </div>
+
+    <!-- Charts and Recent Transactions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
       <!-- Recent Transactions -->
       <UCard>
@@ -180,6 +275,12 @@
             class="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-0"
           >
             <div class="flex items-center">
+              <UIcon
+                v-if="transaction.source === 'ios' || transaction.source === 'ios_uncategorized'"
+                name="i-heroicons-device-phone-mobile"
+                class="h-4 w-4 text-gray-400 flex-shrink-0"
+                title="Transaction iOS"
+              />
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                   {{ transaction.description }}
@@ -199,6 +300,35 @@
         </div>
       </UCard>
     </div>
+
+    <!-- Correction Modal (for iOS uncategorized transactions) -->
+    <UModal v-model="showCorrectionModal">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">Corriger la catégorie</h3>
+        </template>
+        <div v-if="correctionAlert" class="space-y-4">
+          <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p class="text-sm"><strong>Transaction :</strong> {{ correctionAlert.payload.label }}</p>
+            <p class="text-sm"><strong>Montant :</strong> {{ formatCurrency(parseFloat(correctionAlert.payload.amount)) }}</p>
+            <p class="text-sm"><strong>Catégorie saisie :</strong> {{ correctionAlert.payload.category_name }}</p>
+          </div>
+          <UFormGroup label="Catégorie">
+            <USelectMenu
+              v-model="correctionCategory"
+              :options="categories.filter(c => c.type === 'expense')"
+              option-attribute="name"
+              value-attribute="id"
+              placeholder="Sélectionner une catégorie"
+            />
+          </UFormGroup>
+          <div class="flex justify-end gap-2">
+            <UButton variant="ghost" color="gray" @click="showCorrectionModal = false">Annuler</UButton>
+            <UButton @click="handleCorrection" :loading="correcting" :disabled="!correctionCategory">Enregistrer</UButton>
+          </div>
+        </div>
+      </UCard>
+    </UModal>
 
     <!-- Quick Transaction Modal -->
     <UModal v-model="showTransactionModal" :ui="{ width: 'sm:max-w-lg' }">
@@ -299,15 +429,17 @@
 </template>
 
 <script setup lang="ts">
-import type { Transaction } from '~/types';
+import type { Transaction, PendingAlert } from '~/types';
 
 definePageMeta({
   middleware: 'auth'
 });
 
 const { getAccountsSummary, getAccounts } = useAccounts();
-const { getTransactions, getStatistics, createTransaction } = useTransactions();
+const { getTransactions, getStatistics, createTransaction, updateTransaction } = useTransactions();
 const { getCategories } = useCategories();
+const { getDashboardData: getBudgetDashboardData } = useBudgets();
+const { getAlerts, dismissAlert } = useAlerts();
 const toast = useToast();
 
 // Reactive state
@@ -323,6 +455,14 @@ const recentTransactions = ref<Transaction[]>([]);
 const showTransactionModal = ref(false);
 const loading = ref(false);
 const formErrors = ref<Record<string, string>>({});
+const budgetDashData = ref<any>(null);
+
+// Alerts state
+const pendingAlerts = ref<PendingAlert[]>([]);
+const showCorrectionModal = ref(false);
+const correctionAlert = ref<PendingAlert | null>(null);
+const correctionCategory = ref<string | number>('');
+const correcting = ref(false);
 
 // Transaction form
 const transactionForm = ref<{
@@ -376,6 +516,48 @@ const getCurrentMonthRange = () => {
   };
 };
 
+// Fetch alerts
+const fetchAlerts = async () => {
+  const result = await getAlerts();
+  if (result.success && result.data) {
+    pendingAlerts.value = result.data;
+  }
+};
+
+const handleDismissAlert = async (alertId: number) => {
+  const result = await dismissAlert(alertId);
+  if (result.success) {
+    pendingAlerts.value = pendingAlerts.value.filter(a => a.id !== alertId);
+  }
+};
+
+const openCorrectionModal = (alert: PendingAlert) => {
+  correctionAlert.value = alert;
+  correctionCategory.value = '';
+  showCorrectionModal.value = true;
+};
+
+const handleCorrection = async () => {
+  if (!correctionAlert.value || !correctionCategory.value) return;
+  correcting.value = true;
+
+  const result = await updateTransaction(correctionAlert.value.payload.transaction_id, {
+    category: parseInt(String(correctionCategory.value)),
+    source: 'ios'
+  });
+
+  if (result.success) {
+    await dismissAlert(correctionAlert.value.id);
+    pendingAlerts.value = pendingAlerts.value.filter(a => a.id !== correctionAlert.value!.id);
+    showCorrectionModal.value = false;
+    toast.add({ title: 'Corrigé', description: 'Catégorie mise à jour', color: 'green' });
+    await fetchDashboardData();
+  } else {
+    toast.add({ title: 'Erreur', description: 'Impossible de corriger la transaction', color: 'red' });
+  }
+  correcting.value = false;
+};
+
 // Fetch dashboard data
 const fetchDashboardData = async () => {
   try {
@@ -410,6 +592,12 @@ const fetchDashboardData = async () => {
       savings.value = statsResponse.data.net;
       futureIncome.value = statsResponse.data.income.future || 0;
       futureExpenses.value = statsResponse.data.expense.future || 0;
+    }
+
+    // Fetch budget vs actual data
+    const budgetDashResult = await getBudgetDashboardData();
+    if (budgetDashResult.success && budgetDashResult.data) {
+      budgetDashData.value = budgetDashResult.data;
     }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
@@ -520,5 +708,6 @@ const formatDate = (dateString: string) => {
 // Load data on mount
 onMounted(() => {
   fetchDashboardData();
+  fetchAlerts();
 });
 </script>

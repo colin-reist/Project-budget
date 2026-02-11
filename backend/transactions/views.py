@@ -84,7 +84,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
             }
 
         # Calcul des transactions futures (après aujourd'hui jusqu'à la fin de la période)
-        future_queryset = queryset.filter(date__gt=date.today())
+        # Exclure les ajustements des statistiques
+        future_queryset = queryset.filter(date__gt=date.today()).exclude(type='adjustment')
         future_stats = future_queryset.values('type').annotate(
             total=Sum('amount'),
             count=Count('id')
@@ -116,8 +117,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
 
-        # Exclure les transactions futures par défaut
-        queryset = queryset.filter(date__lte=date.today())
+        # Exclure les transactions futures et les ajustements par défaut
+        queryset = queryset.filter(date__lte=date.today()).exclude(type='adjustment')
 
         # Grouper par catégorie
         stats = queryset.values(
@@ -152,8 +153,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset().filter(date__year=year)
 
-        # Exclure les transactions futures par défaut
-        queryset = queryset.filter(date__lte=date_class.today())
+        # Exclure les transactions futures et les ajustements par défaut
+        queryset = queryset.filter(date__lte=date_class.today()).exclude(type='adjustment')
 
         # Grouper par mois et type
         months_data = {}

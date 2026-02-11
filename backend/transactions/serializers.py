@@ -10,6 +10,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     """
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     type_display = serializers.CharField(source='get_type_display', read_only=True)
+    source_display = serializers.CharField(source='get_source_display', read_only=True)
     account_details = AccountListSerializer(source='account', read_only=True)
     category_details = CategoryListSerializer(source='category', read_only=True)
     destination_account_details = AccountListSerializer(source='destination_account', read_only=True)
@@ -35,10 +36,12 @@ class TransactionSerializer(serializers.ModelSerializer):
             'recurrence_frequency',
             'recurrence_interval',
             'recurrence_end_date',
+            'source',
+            'source_display',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'type_display',
+        read_only_fields = ['id', 'created_at', 'updated_at', 'type_display', 'source_display',
                            'account_details', 'category_details', 'destination_account_details']
 
     def validate(self, data):
@@ -96,5 +99,6 @@ class TransactionListSerializer(serializers.ModelSerializer):
             'amount',
             'description',
             'date',
-            'is_recurring'
+            'is_recurring',
+            'source',
         ]

@@ -19,7 +19,12 @@
       "Bash(python -c:*)",
       "Bash(python manage.py check:*)",
       "Bash(py:*)",
-      "Bash(python -m py_compile:*)"
+      "Bash(python -m py_compile:*)",
+      "Bash(python manage.py show_urls:*)",
+      "Bash(findstr:*)",
+      "Bash(python:*)",
+      "Bash(npm install:*)",
+      "Bash(powershell:*)"
     ]
   }
 }

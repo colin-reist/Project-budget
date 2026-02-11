@@ -47,6 +47,30 @@ export interface Category {
   created_at: string;
 }
 
+// API Token types
+export interface APIToken {
+  id: number;
+  name: string;
+  token?: string; // Seulement présent à la création
+  created_at: string;
+  last_used: string | null;
+  is_active: boolean;
+}
+
+// Pending Alert types
+export interface PendingAlert {
+  id: number;
+  type: 'unknown_category';
+  payload: {
+    transaction_id: number;
+    category_name: string;
+    amount: string;
+    label: string;
+  };
+  seen: boolean;
+  created_at: string;
+}
+
 // Transaction types
 export interface Transaction {
   id: number;
@@ -91,6 +115,8 @@ export interface Transaction {
   recurrence_frequency?: string | null;
   recurrence_interval: number;
   recurrence_end_date?: string | null;
+  source?: 'web' | 'ios' | 'ios_uncategorized';
+  source_display?: string;
   created_at: string;
   updated_at: string;
 }
@@ -138,6 +164,30 @@ export interface Budget {
   projected_remaining_amount?: number;
   projected_percentage_used?: number;
   is_projected_over_budget?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Savings Goal types
+export interface SavingsGoal {
+  id: number;
+  label: string;
+  target_amount: string;
+  product_url?: string | null;
+  product_image_url?: string | null;
+  target_date?: string | null;
+  saving_amount?: string | null;
+  saving_frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  saving_frequency_display?: string;
+  status: 'active' | 'reached' | 'cancelled';
+  status_display?: string;
+  calculated_result?: {
+    mode: 'date_calculated' | 'amount_calculated';
+    target_date?: string;
+    saving_amount?: number;
+    periods_needed: number;
+  } | null;
+  linked_budgets?: Array<{ id: number; name: string; amount: number }>;
   created_at: string;
   updated_at: string;
 }

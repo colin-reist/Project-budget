@@ -44,17 +44,28 @@ export const useApi = () => {
           token.value = null;
           refreshToken.value = null;
 
-          // Redirect to login page using navigateTo (Nuxt 3 way)
-          await navigateTo('/login', { replace: true });
+          // Redirect to login page using window.location for reliability
+          if (typeof window !== 'undefined') {
+            console.log('Session expirée, redirection vers la page de login...');
+            window.location.href = '/login';
+          }
 
           // Reset the flag after a short delay
           setTimeout(() => {
             isRedirecting = false;
           }, 1000);
         }
+
+        // Don't re-throw auth errors to avoid console spam
+        // Just return a rejected promise
+        return Promise.reject({
+          status: error.status,
+          message: 'Session expirée',
+          redirecting: true
+        });
       }
 
-      // Re-throw the error so it can be handled by the caller
+      // Re-throw other errors so they can be handled by the caller
       throw error;
     }
   };

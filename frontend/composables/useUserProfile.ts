@@ -35,8 +35,48 @@ export const useUserProfile = () => {
     }
   }
 
+  /**
+   * Change password
+   */
+  const changePassword = async (passwordData: {
+    current_password: string
+    new_password: string
+  }): Promise<{ data: any | null; success: boolean; error?: any }> => {
+    try {
+      const data = await apiFetch('/api/v1/auth/profile/change_password/', {
+        method: 'POST',
+        body: passwordData
+      })
+      return { data, success: true }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      return { data: null, success: false, error }
+    }
+  }
+
+  /**
+   * Delete account
+   */
+  const deleteAccount = async (deleteData: {
+    password: string
+    confirm: string
+  }): Promise<{ success: boolean; error?: any }> => {
+    try {
+      await apiFetch('/api/v1/auth/profile/delete_account/', {
+        method: 'DELETE',
+        body: deleteData
+      })
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      return { success: false, error }
+    }
+  }
+
   return {
     getProfile,
-    updateProfile
+    updateProfile,
+    changePassword,
+    deleteAccount
   }
 }

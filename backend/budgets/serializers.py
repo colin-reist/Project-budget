@@ -1,5 +1,8 @@
+import math
+from datetime import date
+
 from rest_framework import serializers
-from .models import Budget
+from .models import Budget, SavingsGoal
 from categories.serializers import CategoryListSerializer
 
 
@@ -137,3 +140,97 @@ class BudgetListSerializer(serializers.ModelSerializer):
 
     def get_is_projected_over_budget(self, obj):
         return obj.is_projected_over_budget()
+
+
+class SavingsGoalSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les objectifs d'épargne avec calculs automatiques.
+    """
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    calculated_result = serializers.SerializerMethodField()
+    linked_budgets = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    saving_frequency_display = serializers.CharField(source='get_saving_frequency_display', read_only=True)
+
+    class Meta:
+        model = SavingsGoal
+        fields = [
+            'id', 'user', 'label', 'target_amount', 'product_url',
+            'product_image_url', 'target_date', 'saving_amount',
+            'saving_frequency', 'saving_frequency_display', 'status',
+            'status_display', 'calculated_result', 'linked_budgets',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_calculated_result(self, obj):
+        """Calcule la date cible (Mode A) ou le montant par période (Mode B)."""
+        if obj.saving_amount and not obj.target_date:
+            # Mode A : épargne connue → calculer la date
+            if obj.saving_amount <= 0:
+                return None
+            periods_needed = math.ceil(float(obj.target_amount) / float(obj.saving_amount))
+            today = date.today()
+
+            if obj.saving_frequency == 'daily':
+                from datetime import timedelta
+                target = today + timedelta(days=periods_needed)
+            elif obj.saving_frequency == 'weekly':
+                from datetime import timedelta
+                target = today + timedelta(weeks=periods_needed)
+            elif obj.saving_frequency == 'monthly':
+                month = today.month + periods_needed
+                year = today.year + (month - 1) // 12
+                month = (month - 1) % 12 + 1
+                day = min(today.day, 28)
+                target = date(year, month, day)
+            else:  # yearly
+                target = date(today.year + periods_needed, today.month, today.day)
+
+            return {
+                'mode': 'date_calculated',
+                'target_date': str(target),
+                'periods_needed': periods_needed,
+            }
+
+        elif obj.target_date:
+            # Mode B : date connue → calculer le montant
+            today = date.today()
+            if obj.target_date <= today:
+                return {'mode': 'amount_calculated', 'saving_amount': float(obj.target_amount), 'periods_needed': 1}
+
+            if obj.saving_frequency == 'daily':
+                periods = (obj.target_date - today).days
+            elif obj.saving_frequency == 'weekly':
+                periods = max(1, (obj.target_date - today).days // 7)
+            elif obj.saving_frequency == 'monthly':
+                periods = max(1, (obj.target_date.year - today.year) * 12 + (obj.target_date.month - today.month))
+            else:  # yearly
+                periods = max(1, obj.target_date.year - today.year)
+
+            amount_per_period = float(obj.target_amount) / periods
+            return {
+                'mode': 'amount_calculated',
+                'saving_amount': round(amount_per_period, 2),
+                'periods_needed': periods,
+            }
+
+        return None
+
+    def get_linked_budgets(self, obj):
+        budgets = Budget.objects.filter(savings_goal=obj)
+        return [{'id': b.id, 'name': b.name, 'amount': float(b.amount)} for b in budgets]
+
+
+class SavingsGoalListSerializer(serializers.ModelSerializer):
+    """
+    Serializer simplifié pour la liste des objectifs d'épargne.
+    """
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = SavingsGoal
+        fields = [
+            'id', 'label', 'target_amount', 'target_date', 'saving_amount',
+            'saving_frequency', 'status', 'status_display', 'created_at'
+        ]

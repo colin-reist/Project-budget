@@ -38,6 +38,16 @@
       <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-gray-400" />
     </div>
 
+    <!-- Error State -->
+    <div v-else-if="loadError" class="text-center py-12">
+      <UIcon name="i-heroicons-exclamation-circle" class="h-12 w-12 text-red-400 mx-auto mb-3" />
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white">Impossible de charger les comptes</h3>
+      <p class="mt-1 text-sm text-gray-500">Vérifiez votre connexion et réessayez.</p>
+      <div class="mt-4">
+        <UButton @click="fetchAccounts(); fetchSummary()">Réessayer</UButton>
+      </div>
+    </div>
+
     <!-- Accounts Grid -->
     <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <UCard
@@ -141,6 +151,15 @@
       </div>
     </div>
 
+    <!-- Confirm Delete Modal -->
+    <ConfirmModal
+      v-model="showConfirmDelete"
+      title="Supprimer le compte"
+      :message="`Êtes-vous sûr de vouloir supprimer le compte « ${accountToDelete?.name} » ?`"
+      confirm-label="Supprimer"
+      @confirm="executeDelete"
+    />
+
     <!-- Add/Edit Modal -->
     <UModal v-model="showModal">
       <UCard>
@@ -167,7 +186,7 @@
             />
           </UFormGroup>
 
-          <UFormGroup v-if="!editingAccount" label="Solde initial" required>
+          <UFormGroup :label="editingAccount ? 'Solde actuel' : 'Solde initial'" required>
             <UInput
               v-model="form.balance"
               type="number"
@@ -175,17 +194,8 @@
               placeholder="0.00"
             />
             <template #help>
-              <span class="text-xs text-gray-500">Le solde initial de votre compte</span>
-            </template>
-          </UFormGroup>
-
-          <UFormGroup v-else label="Solde actuel">
-            <UInput
-              :model-value="formatCurrency(parseFloat(form.balance), form.currency)"
-              disabled
-            />
-            <template #help>
-              <span class="text-xs text-gray-500">Le solde est calculé automatiquement à partir des transactions. Pour l'ajuster, créez une transaction de type revenu ou dépense.</span>
+              <span v-if="!editingAccount" class="text-xs text-gray-500">Le solde initial de votre compte</span>
+              <span v-else class="text-xs text-gray-500">Modifiez le solde pour créer automatiquement une transaction d'ajustement. Cet ajustement n'affectera pas vos budgets ni vos statistiques.</span>
             </template>
           </UFormGroup>
 
@@ -242,6 +252,7 @@ const toast = useToast();
 const accounts = ref<Account[]>([]);
 const summary = ref<AccountSummary | null>(null);
 const loading = ref(false);
+const loadError = ref(false);
 const showModal = ref(false);
 const submitting = ref(false);
 const error = ref('');
@@ -269,15 +280,12 @@ const currencies = ['CHF', 'EUR', 'USD', 'GBP'];
 
 const fetchAccounts = async () => {
   loading.value = true;
+  loadError.value = false;
   const result = await getAccounts();
   if (result.success && result.data) {
     accounts.value = result.data.results;
   } else {
-    toast.add({
-      title: 'Erreur',
-      description: result.error || 'Impossible de charger les comptes',
-      color: 'red',
-    });
+    loadError.value = true;
   }
   loading.value = false;
 };
@@ -322,9 +330,8 @@ const handleSubmit = async () => {
   try {
     let result;
     if (editingAccount.value) {
-      // Lors de la modification, ne pas envoyer le champ balance
-      const { balance, ...accountData } = form.value;
-      result = await updateAccount(editingAccount.value.id, accountData);
+      // Lors de la modification, envoyer tous les champs y compris balance
+      result = await updateAccount(editingAccount.value.id, form.value);
     } else {
       result = await createAccount(form.value);
     }
@@ -367,9 +374,19 @@ const toggleActive = async (account: Account) => {
   }
 };
 
+// Confirm modal state
+const showConfirmDelete = ref(false);
+const accountToDelete = ref<Account | null>(null);
+
 const confirmDelete = (account: Account) => {
-  if (confirm(`Êtes-vous sûr de vouloir supprimer le compte "${account.name}" ?`)) {
-    deleteAccountHandler(account.id);
+  accountToDelete.value = account;
+  showConfirmDelete.value = true;
+};
+
+const executeDelete = () => {
+  if (accountToDelete.value) {
+    deleteAccountHandler(accountToDelete.value.id);
+    accountToDelete.value = null;
   }
 };
 

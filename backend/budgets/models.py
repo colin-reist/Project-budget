@@ -44,6 +44,14 @@ class Budget(models.Model):
         verbose_name='Objectif d\'épargne',
         help_text='Si coché, ce budget suit les transferts vers comptes épargne au lieu des dépenses'
     )
+    savings_goal = models.ForeignKey(
+        'budgets.SavingsGoal',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='budgets',
+        verbose_name='Objectif d\'épargne lié'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -257,3 +265,81 @@ class Budget(models.Model):
         Vérifie si l'alerte doit être déclenchée en incluant les transactions futures
         """
         return self.get_projected_percentage_used() >= self.alert_threshold
+
+
+class SavingsGoal(models.Model):
+    """
+    Objectif d'épargne pour planifier l'achat d'un objet.
+    """
+    STATUS_CHOICES = [
+        ('active', 'Actif'),
+        ('reached', 'Atteint'),
+        ('cancelled', 'Annulé'),
+    ]
+
+    FREQUENCY_CHOICES = [
+        ('daily', 'Quotidien'),
+        ('weekly', 'Hebdomadaire'),
+        ('monthly', 'Mensuel'),
+        ('yearly', 'Annuel'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='savings_goals'
+    )
+    label = models.CharField(
+        max_length=200,
+        verbose_name="Nom de l'objectif"
+    )
+    target_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        verbose_name='Montant cible'
+    )
+    product_url = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name='URL du produit'
+    )
+    product_image_url = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name="URL de l'image"
+    )
+    target_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Date cible'
+    )
+    saving_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Montant d'épargne par période"
+    )
+    saving_frequency = models.CharField(
+        max_length=20,
+        choices=FREQUENCY_CHOICES,
+        default='monthly',
+        verbose_name="Fréquence d'épargne"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name='Statut'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'savings_goal'
+        verbose_name = "Objectif d'épargne"
+        verbose_name_plural = "Objectifs d'épargne"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.label} - {self.target_amount} CHF"

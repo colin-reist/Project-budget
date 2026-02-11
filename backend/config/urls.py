@@ -16,6 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.routers import SimpleRouter
+from authentication.ios_views import (
+    ios_create_transaction,
+    alert_list,
+    alert_count,
+    alert_dismiss,
+)
+from budgets.views import SavingsGoalViewSet
+
+savings_router = SimpleRouter()
+savings_router.register(r'savings-goals', SavingsGoalViewSet, basename='savings-goal')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,4 +37,13 @@ urlpatterns = [
     path('api/v1/categories/', include('categories.urls')),
     path('api/v1/transactions/', include('transactions.urls')),
     path('api/v1/budgets/', include('budgets.urls')),
+    path('api/v1/', include(savings_router.urls)),
+
+    # iOS integration
+    path('api/v1/ios/transaction/', ios_create_transaction, name='ios-transaction'),
+
+    # Alertes
+    path('api/v1/alerts/', alert_list, name='alert-list'),
+    path('api/v1/alerts/count/', alert_count, name='alert-count'),
+    path('api/v1/alerts/<int:alert_id>/dismiss/', alert_dismiss, name='alert-dismiss'),
 ]

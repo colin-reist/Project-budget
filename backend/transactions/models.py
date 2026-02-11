@@ -14,6 +14,12 @@ class Transaction(models.Model):
         ('adjustment', 'Ajustement de solde'),
     ]
 
+    SOURCE_CHOICES = [
+        ('web', 'Web'),
+        ('ios', 'iOS'),
+        ('ios_uncategorized', 'iOS (non catégorisé)'),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -94,6 +100,12 @@ class Transaction(models.Model):
         null=True,
         blank=True,
         verbose_name='Fin de récurrence'
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default='web',
+        verbose_name='Source'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,

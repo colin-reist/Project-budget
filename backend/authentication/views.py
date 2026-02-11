@@ -207,3 +207,78 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def change_password(self, request):
+        """
+        Change user password
+
+        POST /api/v1/auth/profile/change_password/
+        {
+            "current_password": "oldPassword123",
+            "new_password": "newPassword123"
+        }
+        """
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+
+        # Validate input
+        if not current_password or not new_password:
+            return Response({
+                'error': 'Both current_password and new_password are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check current password
+        if not user.check_password(current_password):
+            return Response({
+                'error': 'Current password is incorrect.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate new password
+        if len(new_password) < 8:
+            return Response({
+                'error': 'New password must be at least 8 characters long.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Set new password
+        user.set_password(new_password)
+        user.save()
+
+        return Response({
+            'message': 'Password changed successfully.'
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'])
+    def delete_account(self, request):
+        """
+        Delete user account and all associated data
+
+        DELETE /api/v1/auth/profile/delete_account/
+        {
+            "password": "currentPassword123",
+            "confirm": "DELETE"
+        }
+        """
+        user = request.user
+        password = request.data.get('password')
+        confirm = request.data.get('confirm')
+
+        # Validate confirmation
+        if confirm != 'DELETE':
+            return Response({
+                'error': 'Please type DELETE to confirm account deletion.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify password
+        if not password or not user.check_password(password):
+            return Response({
+                'error': 'Password is incorrect.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Delete user (cascade will delete all related data)
+        user.delete()
+
+        return Response({
+            'message': 'Account deleted successfully.'
+        }, status=status.HTTP_200_OK)

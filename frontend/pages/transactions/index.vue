@@ -15,6 +15,7 @@ const transactions = ref<Transaction[]>([])
 const accounts = ref<Account[]>([])
 const categories = ref<Category[]>([])
 const loading = ref(false)
+const loadError = ref(false)
 const showModal = ref(false)
 const editingTransaction = ref<Transaction | null>(null)
 const stats = ref({
@@ -74,9 +75,12 @@ const availableCategories = computed(() => {
 // Methods
 const fetchTransactions = async () => {
   loading.value = true
+  loadError.value = false
   const result = await getTransactions({ ordering: '-date,-created_at' })
   if (result.success && result.data) {
     transactions.value = result.data.results
+  } else {
+    loadError.value = true
   }
   loading.value = false
 }
@@ -203,12 +207,22 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDelete = async (transaction: Transaction) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) return
+// Confirm modal state
+const showConfirmDelete = ref(false)
+const transactionToDelete = ref<Transaction | null>(null)
+
+const handleDelete = (transaction: Transaction) => {
+  transactionToDelete.value = transaction
+  showConfirmDelete.value = true
+}
+
+const executeDelete = async () => {
+  if (!transactionToDelete.value) return
 
   loading.value = true
-  const result = await deleteTransaction(transaction.id)
+  const result = await deleteTransaction(transactionToDelete.value.id)
   loading.value = false
+  transactionToDelete.value = null
 
   if (result.success) {
     toast.add({
@@ -274,7 +288,7 @@ onMounted(() => {
       <UCard>
         <div class="text-sm text-gray-500">Solde net</div>
         <div class="text-2xl font-bold" :class="stats.net >= 0 ? 'text-green-600' : 'text-red-600'">
-          {{ stats.net.toFixed(2) }} CHF
+          {{ stats.net >= 0 ? '+' : '' }}{{ stats.net.toFixed(2) }} CHF
         </div>
         <div class="text-xs text-gray-400">Revenus - Dépenses</div>
       </UCard>
@@ -317,6 +331,14 @@ onMounted(() => {
     <UCard>
       <div v-if="loading" class="text-center py-8">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+      <div v-else-if="loadError" class="text-center py-8">
+        <UIcon name="i-heroicons-exclamation-circle" class="h-12 w-12 text-red-400 mx-auto mb-3" />
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Impossible de charger les transactions</h3>
+        <p class="mt-1 text-sm text-gray-500">Vérifiez votre connexion et réessayez.</p>
+        <div class="mt-4">
+          <UButton @click="fetchTransactions(); fetchStats()">Réessayer</UButton>
+        </div>
       </div>
       <div v-else-if="filteredTransactions.length === 0" class="text-center py-8 text-gray-500">
         Aucune transaction trouvée
@@ -365,6 +387,7 @@ onMounted(() => {
               size="sm"
               color="gray"
               variant="ghost"
+              aria-label="Modifier la transaction"
               @click="openModal(transaction)"
             />
             <UButton
@@ -372,12 +395,22 @@ onMounted(() => {
               size="sm"
               color="red"
               variant="ghost"
+              aria-label="Supprimer la transaction"
               @click="handleDelete(transaction)"
             />
           </div>
         </div>
       </div>
     </UCard>
+
+    <!-- Confirm Delete Modal -->
+    <ConfirmModal
+      v-model="showConfirmDelete"
+      title="Supprimer la transaction"
+      :message="`Supprimer la transaction « ${transactionToDelete?.description || 'Sans description'} » de ${transactionToDelete?.amount} ?`"
+      confirm-label="Supprimer"
+      @confirm="executeDelete"
+    />
 
     <!-- Transaction Modal -->
     <UModal v-model="showModal" :ui="{ width: 'sm:max-w-2xl' }">

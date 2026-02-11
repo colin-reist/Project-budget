@@ -192,12 +192,22 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDelete = async (budget: Budget) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce budget ?')) return
+// Confirm modal state
+const showConfirmDelete = ref(false)
+const budgetToDelete = ref<Budget | null>(null)
+
+const handleDelete = (budget: Budget) => {
+  budgetToDelete.value = budget
+  showConfirmDelete.value = true
+}
+
+const executeDelete = async () => {
+  if (!budgetToDelete.value) return
 
   loading.value = true
-  const result = await deleteBudget(budget.id)
+  const result = await deleteBudget(budgetToDelete.value.id)
   loading.value = false
+  budgetToDelete.value = null
 
   if (result.success) {
     toast.add({
@@ -739,7 +749,7 @@ onMounted(() => {
             <span class="text-sm text-gray-600 dark:text-gray-400">Restant</span>
             <div class="text-right">
               <div class="text-lg font-bold" :class="(budget.remaining_amount ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ (budget.remaining_amount ?? 0).toFixed(2) }} CHF
+                {{ (budget.remaining_amount ?? 0) < 0 ? '−' : '' }}{{ Math.abs(budget.remaining_amount ?? 0).toFixed(2) }} CHF
               </div>
               <div v-if="(budget.projected_remaining_amount ?? 0) !== (budget.remaining_amount ?? 0)"
                    class="text-xs"
@@ -1001,6 +1011,15 @@ onMounted(() => {
         </form>
       </UCard>
     </UModal>
+
+    <!-- Confirm Delete Modal -->
+    <ConfirmModal
+      v-model="showConfirmDelete"
+      title="Supprimer le budget"
+      :message="`Êtes-vous sûr de vouloir supprimer le budget « ${budgetToDelete?.name} » ?`"
+      confirm-label="Supprimer"
+      @confirm="executeDelete"
+    />
 
     <!-- Transactions Modal -->
     <UModal v-model="showTransactionsModal" :ui="{ width: 'sm:max-w-2xl' }">

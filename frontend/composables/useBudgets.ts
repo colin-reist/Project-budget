@@ -124,6 +124,19 @@ export const useBudgets = () => {
     }
   }
 
+  /**
+   * Récupérer les données budget vs réel pour le dashboard
+   */
+  const getDashboardData = async (): Promise<{ data: any | null; success: boolean; error?: any }> => {
+    try {
+      const data = await apiFetch('/api/v1/budgets/dashboard_data/')
+      return { data, success: true }
+    } catch (error) {
+      console.error('Error fetching budget dashboard data:', error)
+      return { data: null, success: false, error }
+    }
+  }
+
   return {
     getBudgets,
     getBudget,
@@ -131,6 +144,7 @@ export const useBudgets = () => {
     updateBudget,
     deleteBudget,
     getBudgetsSummary,
+    getDashboardData,
     toggleBudgetActive
   }
 }
