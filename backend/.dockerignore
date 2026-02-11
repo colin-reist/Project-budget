@@ -1,4 +1,10 @@
-__pycache__/
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
 *.py[cod]
 *$py.class
 *.so
@@ -18,22 +24,51 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.env
+MANIFEST
+.pytest_cache/
+
+# Virtual environments
+venv/
+myvenv/
 .venv
 env/
-venv/
 ENV/
 env.bak/
 venv.bak/
-.git
-.gitignore
-README.md
-*.md
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Database
 *.sqlite3
 db.sqlite3
+
+# Media files
 media/
-staticfiles/
-Dockerfile
-.dockerignore
+
+# Testing
+.coverage
+htmlcov/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Documentation
+docs/
+README.md

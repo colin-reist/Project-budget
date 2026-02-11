@@ -1,0 +1,126 @@
+# Caddyfile pour Budget Tracker
+# ==================================
+# À copier/adapter en /etc/caddy/Caddyfile sur le Raspberry Pi
+#
+# AVANT D'UTILISER:
+# 1. Remplacer "yourdomain.com" par votre domaine réel
+# 2. Assurer que le domaine pointe vers l'IP du RPi (Infomaniak DNS)
+# 3. docker-compose doit être lancé sur les ports 3000 et 8000
+
+# Configuration principale
+yourdomain.com, www.yourdomain.com {
+    # ==========================================
+    # COMPRESSION
+    # ==========================================
+    encode gzip
+
+    # ==========================================
+    # LOGS D'ACCÈS
+    # ==========================================
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb      # Rotation tous les 100MB
+            roll_keep 10         # Garder les 10 derniers fichiers
+            roll_keep_for 720h   # Garder 30 jours d'historique
+        }
+        format json
+    }
+
+    # ==========================================
+    # EN-TÊTES DE SÉCURITÉ
+    # ==========================================
+    header Referrer-Policy "no-referrer-when-downgrade"
+    header X-Content-Type-Options "nosniff"
+    header X-Frame-Options "SAMEORIGIN"
+    header X-XSS-Protection "1; mode=block"
+    header Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # ==========================================
+    # REVERSE PROXY - API (/api/v1/*)
+    # ==========================================
+    handle_path /api/v1/* {
+        # Réexpédier vers le backend Django (port 8000)
+        reverse_proxy localhost:8000 {
+            # Headers pour CORS et proxying
+            header_uri -X-Forwarded-Proto https
+            header_uri -X-Forwarded-For {http.request.remote.host}
+            header_uri -X-Forwarded-Host {http.request.host}
+
+            # Timeout pour les requêtes API
+            timeout 30s
+
+            # Retry policy
+            policy random_selection
+            fail_duration 10s
+        }
+
+        # Logs spécifiques pour l'API
+        log {
+            output file /var/log/caddy/api.log {
+                roll_size 50mb
+                roll_keep 10
+            }
+            format json
+        }
+    }
+
+    # ==========================================
+    # REVERSE PROXY - FRONTEND (routes Nuxt)
+    # ==========================================
+    handle {
+        # Réexpédier vers le frontend Nuxt (port 3000)
+        reverse_proxy localhost:3000 {
+            # Headers pour proxying
+            header_uri -X-Forwarded-Proto https
+            header_uri -X-Forwarded-For {http.request.remote.host}
+            header_uri -X-Forwarded-Host {http.request.host}
+
+            # WebSocket support (si nécessaire)
+            # Uncomment si vous utilisez WebSockets:
+            # header_upstream Connection "upgrade"
+            # header_upstream Upgrade "websocket"
+        }
+    }
+
+    # ==========================================
+    # CACHE STATIQUE
+    # ==========================================
+    @static {
+        path *.css *.js *.png *.jpg *.jpeg *.gif *.svg *.webp
+        path *.woff *.woff2 *.ttf *.eot *.otf
+        path *.ico *.json *.map
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # ==========================================
+    # CACHE POUR HTML/INDEX
+    # ==========================================
+    @html {
+        path *.html /index.html /
+    }
+    header @html Cache-Control "public, max-age=3600, must-revalidate"
+
+    # ==========================================
+    # CERTIFICAT SSL AUTOMATIQUE
+    # ==========================================
+    # Caddy gère automatiquement Let's Encrypt
+    # Pas besoin de configuration supplémentaire!
+    #
+    # Vérifier:
+    # sudo ls -la /var/lib/caddy/
+    # sudo journalctl -u caddy -f
+}
+
+# ==========================================
+# REDIRECTION HTTP → HTTPS (optionnel)
+# ==========================================
+# Caddy le fait automatiquement, mais si besoin explicite:
+#
+# http://yourdomain.com {
+#     redir https://{host}{uri} permanent
+# }
+#
+# http://www.yourdomain.com {
+#     redir https://yourdomain.com{uri} permanent
+# }
