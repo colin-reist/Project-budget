@@ -24,7 +24,10 @@
       "Bash(findstr:*)",
       "Bash(python:*)",
       "Bash(npm install:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(pip install:*)",
+      "Bash(.myvenvScriptspip install python-dotenv)",
+      "Bash(chmod:*)"
     ]
   }
 }
