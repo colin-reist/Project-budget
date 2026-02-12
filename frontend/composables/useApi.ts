@@ -27,8 +27,11 @@ export const useApi = () => {
       headers['Authorization'] = `Bearer ${token.value}`;
     }
 
+    // Use server-side URL when running on server, client-side URL when in browser
+    const apiBase = import.meta.server ? config.apiBaseServer : config.public.apiBase;
+
     try {
-      return await $fetch<T>(`${config.public.apiBase}${endpoint}`, {
+      return await $fetch<T>(`${apiBase}${endpoint}`, {
         ...options as any,
         headers,
         credentials: 'include',

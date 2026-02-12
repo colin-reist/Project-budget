@@ -9,24 +9,28 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
+import dj_database_url
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from backend/.env if present
+load_dotenv(dotenv_path=BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-import os
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-a*tzxbonpz$7jx(5a76k6$r3h(mm#cpemr+3clq#-w1c5crsfl')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
 
 # Application definition
@@ -64,11 +68,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Database configuration
-import os
-from pathlib import Path
-import dj_database_url
-
 # Check if we should use PostgreSQL or SQLite
 USE_POSTGRES = os.getenv('USE_POSTGRES', 'True').lower() in ('true', '1', 'yes')
 
@@ -79,13 +78,17 @@ if USE_POSTGRES:
     POSTGRES_DB = os.getenv('POSTGRES_DB')
     # Use 'localhost' for local dev, 'database' for Docker
     POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
+    POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
 
-    DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:5432/{POSTGRES_DB}"
+    DATABASE_URL = (
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    )
 
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
-            conn_max_age=600
+            conn_max_age=600,
+            
         )
     }
 else:

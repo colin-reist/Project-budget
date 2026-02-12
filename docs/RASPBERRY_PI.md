@@ -1,8 +1,23 @@
-# 🍓 Déploiement Raspberry Pi + Caddy + Infomaniak
+# 🍓 Déploiement sur Raspberry Pi
 
 Guide complet pour déployer Budget Tracker sur un Raspberry Pi avec Caddy comme reverse proxy et DNS chez Infomaniak.
 
-## 📋 Architecture Finale
+---
+
+## 📋 Table des Matières
+
+- [Architecture](#-architecture-finale)
+- [Installation Rapide (Automatisée)](#-installation-rapide-automatisée)
+- [Installation Manuelle (Complète)](#-installation-manuelle-complète)
+- [Configuration DNS Infomaniak](#-configuration-dns-infomaniak)
+- [Configuration Caddy](#-configuration-caddy)
+- [Tests et Vérification](#-tests-et-vérification)
+- [Monitoring et Maintenance](#-monitoring-et-maintenance)
+- [Dépannage](#-dépannage)
+
+---
+
+## 📐 Architecture Finale
 
 ```
 Internet
@@ -10,7 +25,7 @@ Internet
    ↓ (yourdomain.com → IP du RPi)
    ↓
 Caddy (port 80/443)
-   ↓ reverse proxy
+   ↓ reverse proxy + HTTPS automatique
    ├─→ Frontend Nuxt (port 3000)
    └─→ Backend Django (port 8000)
    ↓
@@ -20,9 +35,103 @@ Docker Containers
    └─→ Nuxt (Frontend)
 ```
 
-## 🚀 Étape 1: Installation de Base (Raspberry Pi)
+---
 
-### 1.1 Préparation du Raspberry Pi
+## ⚡ Installation Rapide (Automatisée)
+
+### Prérequis
+
+- Raspberry Pi 4 (4GB RAM recommandé)
+- Raspberry Pi OS installé
+- Connexion Internet
+- Domaine chez Infomaniak (ou autre)
+
+### Installation en 3 Commandes
+
+```bash
+# 1. SSH sur le Raspberry Pi
+ssh pi@raspberrypi.local
+# ou: ssh pi@192.168.1.100
+
+# 2. Cloner et lancer l'installation automatisée
+git clone https://github.com/votre-username/Project-budget.git
+cd Project-budget
+sudo bash scripts/install-rpi.sh
+
+# 3. Suivre les instructions à l'écran
+```
+
+### Que fait le script d'installation ?
+
+Le script `install-rpi.sh` installe automatiquement:
+
+✅ Docker et Docker Compose
+✅ Caddy (reverse proxy)
+✅ Configuration du firewall (UFW)
+✅ Clone du projet dans `/home/pi/apps/Project-budget`
+✅ Création du fichier `.env`
+✅ Configuration des backups automatiques
+✅ Lancement de l'application
+
+### Configuration Post-Installation
+
+Après l'installation automatisée, vous devrez configurer:
+
+#### 1️⃣ Éditer `.env`
+
+```bash
+nano /home/pi/apps/Project-budget/.env
+```
+
+Modifier ces lignes:
+
+```env
+# Votre domaine réel
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# Mot de passe fort pour la BD (changez-le!)
+POSTGRES_PASSWORD=VotreMotDePasseFortIci123!
+
+# WebAuthn
+WEBAUTHN_RP_ID=yourdomain.com
+WEBAUTHN_RP_NAME=Budget Tracker
+WEBAUTHN_ORIGIN=https://yourdomain.com
+
+# API
+NUXT_PUBLIC_API_BASE=https://yourdomain.com/api/v1
+```
+
+Sauvegarder: `Ctrl+O`, `Entrée`, `Ctrl+X`
+
+#### 2️⃣ Éditer `Caddyfile`
+
+```bash
+sudo nano /etc/caddy/Caddyfile
+```
+
+Remplacer **tous** les `yourdomain.com` par votre domaine réel.
+
+Sauvegarder: `Ctrl+O`, `Entrée`, `Ctrl+X`
+
+#### 3️⃣ Redémarrer les services
+
+```bash
+# Redémarrer Caddy
+sudo systemctl restart caddy
+
+# Redémarrer l'application
+cd /home/pi/apps/Project-budget
+docker-compose restart
+```
+
+---
+
+## 🔧 Installation Manuelle (Complète)
+
+Si vous préférez installer manuellement ou comprendre chaque étape:
+
+### Étape 1: Préparation du Raspberry Pi
 
 ```bash
 # Mettre à jour le système
@@ -45,7 +154,7 @@ df -h /
 free -h
 ```
 
-### 1.2 Installation de Docker
+### Étape 2: Installation de Docker
 
 ```bash
 # Installer Docker
@@ -60,7 +169,7 @@ docker --version
 docker run hello-world
 ```
 
-### 1.3 Installation de Docker Compose
+### Étape 3: Installation de Docker Compose
 
 ```bash
 # Installer Docker Compose
@@ -70,7 +179,7 @@ sudo apt install -y docker-compose
 docker-compose --version
 ```
 
-### 1.4 Installation de Caddy
+### Étape 4: Installation de Caddy
 
 ```bash
 # Installer Caddy
@@ -87,77 +196,7 @@ sudo systemctl enable caddy
 sudo systemctl status caddy
 ```
 
-## 🌐 Étape 2: Configuration Infomaniak DNS
-
-### 2.1 Accéder au Panneau Infomaniak
-
-1. Aller sur https://www.infomaniak.com
-2. Connexion à votre compte
-3. Domaines → Gérer les domaines → Cliquer sur votre domaine
-
-### 2.2 Configuration des Enregistrements DNS
-
-#### Récupérer l'IP de votre Raspberry Pi
-
-```bash
-# Depuis le RPi
-hostname -I
-
-# Résultat exemple: 192.168.1.100
-# (pour accès interne) ou IP publique (pour accès externe)
-```
-
-#### Ajouter les Enregistrements dans Infomaniak
-
-**A) Enregistrement A (IPv4)**
-
-| Type | Nom | Valeur | TTL |
-|------|-----|--------|-----|
-| A | @ | 192.168.1.100* | 3600 |
-| A | www | 192.168.1.100* | 3600 |
-
-*Remplacer par votre IP publique ou domaine avec port forwarding
-
-**B) Enregistrement AAAA (IPv6)** (optionnel)
-
-Si vous avez une adresse IPv6 de votre FAI:
-
-| Type | Nom | Valeur | TTL |
-|------|-----|--------|-----|
-| AAAA | @ | 2001:db8::1* | 3600 |
-| AAAA | www | 2001:db8::1* | 3600 |
-
-*Remplacer par votre IPv6
-
-### 2.3 Vérifier la Propagation DNS
-
-```bash
-# Depuis votre ordinateur
-nslookup yourdomain.com
-# ou
-dig yourdomain.com
-
-# Depuis le RPi
-host yourdomain.com
-ping yourdomain.com
-
-# Attendre quelques minutes pour la propagation (généralement 5-15 min)
-```
-
-## 🏠 Étape 3: Port Forwarding (Si Accès de l'Extérieur)
-
-Si vous accédez depuis l'extérieur de votre réseau:
-
-1. Aller dans la configuration de votre routeur (192.168.1.1 ou 192.168.0.1)
-2. Trouver "Port Forwarding" ou "Redirection de ports"
-3. Ajouter:
-   - **Port externe**: 80 → **Port interne**: 80 (RPi)
-   - **Port externe**: 443 → **Port interne**: 443 (RPi)
-   - **Adresse IP interne**: 192.168.1.100 (IP du RPi)
-
-## 🐳 Étape 4: Configuration Docker sur RPi
-
-### 4.1 Cloner le Projet
+### Étape 5: Cloner et Configurer le Projet
 
 ```bash
 # Créer un répertoire
@@ -167,11 +206,7 @@ cd /home/pi/apps
 # Cloner le projet
 git clone https://github.com/votre-username/Project-budget.git
 cd Project-budget
-```
 
-### 4.2 Configurer l'Environnement
-
-```bash
 # Copier le template
 cp .env.example .env
 
@@ -208,7 +243,7 @@ WEBAUTHN_ORIGIN=https://yourdomain.com
 NUXT_PUBLIC_API_BASE=https://yourdomain.com/api/v1
 ```
 
-### 4.3 Lancer l'Application
+### Étape 6: Lancer l'Application
 
 ```bash
 # Démarrer les conteneurs
@@ -217,25 +252,100 @@ docker-compose up -d
 # Vérifier que tout fonctionne
 docker-compose ps
 
+# Appliquer les migrations
+docker-compose exec backend python manage.py migrate
+
+# Créer un superutilisateur
+docker-compose exec backend python manage.py createsuperuser
+
 # Vérifier les logs
 docker-compose logs -f backend
 ```
 
-### 4.4 Vérifier l'Accessibilité
+---
+
+## 🌐 Configuration DNS Infomaniak
+
+### Accéder au Panneau Infomaniak
+
+1. Aller sur https://www.infomaniak.com
+2. Connexion → Domaines → Gérer les domaines → Votre domaine
+3. Onglet "DNS" ou "Enregistrements DNS"
+
+### Récupérer l'IP du Raspberry Pi
 
 ```bash
 # Depuis le RPi
-curl http://localhost:3000
-curl http://localhost:8000/api/v1/
+hostname -I
 
-# Depuis votre ordinateur
-curl http://192.168.1.100:3000
-curl http://192.168.1.100:8000
+# Résultat exemple: 192.168.1.100
 ```
 
-## 🔐 Étape 5: Configuration Caddy
+### Ajouter les Enregistrements DNS
 
-### 5.1 Créer le Caddyfile
+#### A) Accès Local (Réseau Wi-Fi)
+
+| Type | Nom | Valeur | TTL |
+|------|-----|--------|-----|
+| **A** | @ | 192.168.1.100 | 3600 |
+| **A** | www | 192.168.1.100 | 3600 |
+
+#### B) Accès Externe (Internet)
+
+| Type | Nom | Valeur | TTL |
+|------|-----|--------|-----|
+| **A** | @ | VOTRE_IP_PUBLIQUE | 3600 |
+| **A** | www | VOTRE_IP_PUBLIQUE | 3600 |
+
+**Trouver votre IP publique:**
+```bash
+curl ifconfig.me
+# ou
+curl icanhazip.com
+```
+
+#### C) IPv6 (Optionnel)
+
+Si vous avez une adresse IPv6:
+
+| Type | Nom | Valeur | TTL |
+|------|-----|--------|-----|
+| **AAAA** | @ | votre:ipv6:ici | 3600 |
+| **AAAA** | www | votre:ipv6:ici | 3600 |
+
+### Vérifier la Propagation DNS
+
+```bash
+# Depuis votre ordinateur
+nslookup yourdomain.com
+# ou
+dig yourdomain.com
+
+# Depuis le RPi
+host yourdomain.com
+ping yourdomain.com
+
+# Attendre quelques minutes pour la propagation (généralement 5-15 min)
+```
+
+---
+
+## 🏠 Port Forwarding (Pour Accès Externe)
+
+Si vous accédez depuis l'extérieur de votre réseau local:
+
+1. Accéder à votre routeur (généralement 192.168.1.1 ou 192.168.0.1)
+2. Trouver "Port Forwarding" ou "Redirection de ports"
+3. Ajouter les règles:
+   - **Port externe**: 80 → **Port interne**: 80 (IP du RPi)
+   - **Port externe**: 443 → **Port interne**: 443 (IP du RPi)
+   - **Adresse IP interne**: 192.168.1.100 (IP du RPi)
+
+---
+
+## 🔐 Configuration Caddy
+
+### Créer le Caddyfile
 
 ```bash
 # Éditer la configuration Caddy
@@ -265,24 +375,24 @@ yourdomain.com, www.yourdomain.com {
     # Reverse proxy pour le Frontend (port 3000)
     handle_path /app* {
         reverse_proxy localhost:3000 {
-            header_uri -X-Forwarded-Proto https
-            header_uri -X-Forwarded-For {http.request.remote.host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {http.request.remote.host}
         }
     }
 
     # Reverse proxy pour l'API (port 8000)
     handle_path /api* {
         reverse_proxy localhost:8000 {
-            header_uri -X-Forwarded-Proto https
-            header_uri -X-Forwarded-For {http.request.remote.host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {http.request.remote.host}
         }
     }
 
     # Redirection root vers le frontend
     handle / {
         reverse_proxy localhost:3000 {
-            header_uri -X-Forwarded-Proto https
-            header_uri -X-Forwarded-For {http.request.remote.host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {http.request.remote.host}
         }
     }
 
@@ -300,7 +410,7 @@ yourdomain.com, www.yourdomain.com {
 }
 ```
 
-### 5.2 Valider et Appliquer la Configuration
+### Valider et Appliquer la Configuration
 
 ```bash
 # Valider la syntaxe
@@ -313,10 +423,10 @@ sudo systemctl restart caddy
 sudo systemctl status caddy
 
 # Vérifier les logs
-sudo tail -50 /var/log/caddy/access.log
+sudo journalctl -u caddy -f
 ```
 
-### 5.3 Certificat SSL Let's Encrypt (Automatique)
+### Certificat SSL Let's Encrypt (Automatique)
 
 Caddy gère automatiquement les certificats SSL avec Let's Encrypt!
 
@@ -328,50 +438,17 @@ sudo ls -la /var/lib/caddy/
 sudo journalctl -u caddy -f
 ```
 
-**Caddy va:**
+**Caddy va automatiquement:**
 - ✅ Détecter votre domaine dans le Caddyfile
 - ✅ Demander un certificat à Let's Encrypt
 - ✅ Configurer HTTPS automatiquement
 - ✅ Renouveler le certificat avant expiration
 
-## 🔗 Étape 6: Configuration Frontend
+---
 
-### 6.1 Modifier la Configuration Nuxt
+## 🧪 Tests et Vérification
 
-```bash
-# Éditer le fichier de configuration
-nano /home/pi/apps/Project-budget/frontend/nuxt.config.ts
-```
-
-**Vérifier que l'API base est correcte:**
-
-```typescript
-export default defineNuxtConfig({
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://yourdomain.com/api/v1'
-    }
-  },
-  // ... reste de la config
-})
-```
-
-### 6.2 Reconstruire le Frontend
-
-```bash
-cd /home/pi/apps/Project-budget
-
-# Mettre à jour le frontend
-docker-compose build frontend
-docker-compose up -d frontend
-
-# Vérifier
-docker-compose logs frontend | tail -20
-```
-
-## 🧪 Étape 7: Tests et Vérification
-
-### 7.1 Test HTTPS
+### Test HTTPS
 
 ```bash
 # Depuis le RPi
@@ -391,7 +468,7 @@ certificate verify OK
 issuer=C=US,O=Let's Encrypt
 ```
 
-### 7.2 Test des Services
+### Test des Services
 
 ```bash
 # Frontend
@@ -400,21 +477,23 @@ curl -I https://yourdomain.com
 # API
 curl -I https://yourdomain.com/api/v1/
 
-# Status de la base de données
-curl -I https://yourdomain.com/api/v1/accounts/
+# Admin Django
+curl -I https://yourdomain.com/admin/
 
 # Tous les services doivent retourner HTTP 200 ou 30x (redirection)
 ```
 
-### 7.3 Accès Depuis Navigateur
+### Accès Depuis Navigateur
 
 1. Ouvrir https://yourdomain.com
 2. Vérifier que le certificat est valide (🔒 vert)
 3. S'enregistrer et tester l'application
 
-## 📊 Étape 8: Monitoring et Maintenance
+---
 
-### 8.1 Vérifier l'État Régulièrement
+## 📊 Monitoring et Maintenance
+
+### Vérifier l'État Régulièrement
 
 ```bash
 # État des conteneurs
@@ -426,6 +505,9 @@ docker stats
 # Espace disque
 df -h
 
+# Mémoire
+free -h
+
 # Logs du backend
 docker-compose logs -f backend
 
@@ -433,13 +515,16 @@ docker-compose logs -f backend
 sudo tail -f /var/log/caddy/access.log
 ```
 
-### 8.2 Sauvegarde Automatique
+### Sauvegarde Automatique
+
+La sauvegarde automatique est configurée par le script d'installation. Sinon:
 
 ```bash
 # Créer le répertoire de backup
 mkdir -p /home/pi/apps/Project-budget/backups
 
-# Créer un script de backup
+# Le script de backup est déjà dans scripts/backup.sh
+# Ou créer manuellement:
 cat > /home/pi/backup-db.sh << 'EOF'
 #!/bin/bash
 cd /home/pi/apps/Project-budget
@@ -461,7 +546,7 @@ chmod +x /home/pi/backup-db.sh
 crontab -l
 ```
 
-### 8.3 Mise à Jour de l'Application
+### Mise à Jour de l'Application
 
 ```bash
 cd /home/pi/apps/Project-budget
@@ -478,9 +563,7 @@ docker-compose ps
 docker-compose logs -f backend
 ```
 
-## 🔐 Sécurité
-
-### 8.4 Firewall (optionnel mais recommandé)
+### Firewall (UFW)
 
 ```bash
 # Installer UFW
@@ -500,9 +583,9 @@ sudo ufw enable
 sudo ufw status
 ```
 
-### 8.5 Certificat SSL - Renouvellement Automatique
+### Certificat SSL - Renouvellement
 
-Caddy gère automatiquement le renouvellement. Vérifier:
+Caddy gère automatiquement le renouvellement. Pour vérifier:
 
 ```bash
 # Logs de renouvellement
@@ -512,25 +595,7 @@ sudo journalctl -u caddy | grep -i renew
 echo | openssl s_client -servername yourdomain.com -connect yourdomain.com:443 2>/dev/null | openssl x509 -noout -dates
 ```
 
-## 📱 Accès depuis l'Extérieur
-
-### À partir de votre ordinateur
-
-```bash
-# Si sur le même réseau Wi-Fi
-https://yourdomain.com
-
-# Si sur réseau différent (4G, autre Wi-Fi)
-https://yourdomain.com (port forwarding nécessaire)
-```
-
-### À partir de votre téléphone
-
-```
-Ouvrir un navigateur → https://yourdomain.com
-Ajouter un raccourci à l'écran d'accueil
-→ Application web progressive (PWA)
-```
+---
 
 ## 🆘 Dépannage
 
@@ -553,7 +618,7 @@ sudo systemctl restart caddy
 ```bash
 # Vérifier dans Infomaniak
 # 1. Panneau → Domaines → DNS
-# 2. Vérifier que A et AAAA (optionnel) pointent vers l'IP du RPi
+# 2. Vérifier que A et AAAA pointent vers l'IP du RPi
 # 3. Attendre la propagation DNS (5-15 min)
 
 # Tester manuellement
@@ -586,9 +651,24 @@ top -bn1 | head -20
 # Vérifier l'espace disque
 df -h
 
-# Réduire les ressources Docker si nécessaire
-# Éditer docker-compose.yml et ajouter des limites
+# Voir les ressources Docker
+docker stats
 ```
+
+### Base de données ne démarre pas
+
+```bash
+# Vérifier les logs
+docker-compose logs database
+
+# Vérifier l'espace disque
+df -h
+
+# Restaurer depuis backup
+docker-compose exec -T database psql -U budget_user budget_db < backups/backup-latest.sql
+```
+
+---
 
 ## 📚 Fichiers Importants
 
@@ -601,7 +681,9 @@ df -h
 | Logs Caddy | /var/log/caddy/ | Logs d'accès |
 | Backups BD | ~/apps/Project-budget/backups/ | Sauvegardes PostgreSQL |
 
-## 🎯 Résumé des Commandes Essentielles
+---
+
+## 🎯 Commandes Essentielles
 
 ```bash
 # Gestion application
@@ -625,6 +707,8 @@ ls -la /home/pi/apps/Project-budget/backups/  # Voir backups
 git pull origin main && docker-compose build && docker-compose up -d
 ```
 
+---
+
 ## ✨ Avantages de cette Configuration
 
 ✅ **HTTPS automatique** - Let's Encrypt via Caddy
@@ -634,15 +718,47 @@ git pull origin main && docker-compose build && docker-compose up -d
 ✅ **Mises à jour sans perte** - Redémarrage transparent
 ✅ **Sauvegarde automatique** - Cron quotidien
 ✅ **Sécurisé** - Firewall + HTTPS + SSL/TLS
-✅ **24/7 disponible** - Raspberry Pi économe
+✅ **24/7 disponible** - Raspberry Pi économe en énergie
 ✅ **Accès interne et externe** - Réseau local + Internet
+
+---
+
+## 📱 Accès à l'Application
+
+### Réseau Local (Wi-Fi/Ethernet RPi)
+
+```
+https://yourdomain.com
+ou
+http://192.168.1.100:3000 (sans Caddy)
+```
+
+### Réseau Externe (Internet)
+
+```
+https://yourdomain.com
+(avec port forwarding configuré)
+```
+
+### Mobile
+
+```
+Ouvrir un navigateur → https://yourdomain.com
+Ajouter un raccourci à l'écran d'accueil → PWA
+```
+
+---
 
 ## 🚀 Prochaines Étapes
 
 1. ✅ Tester l'application: https://yourdomain.com
-2. ✅ Créer un utilisateur
+2. ✅ Créer un utilisateur avec passkey
 3. ✅ Ajouter des comptes et transactions
 4. ✅ Vérifier les sauvegardes automatiques
 5. ✅ Moniter les performances
 
+---
+
 **Vous avez maintenant un serveur personnel sécurisé et professionnel! 🎉**
+
+Pour plus d'informations sur Docker, consultez [DOCKER.md](./DOCKER.md)

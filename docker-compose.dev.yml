@@ -1,16 +1,101 @@
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: budget-tracker-db-dev
+  # Base de données PostgreSQL
+  database:
+    image: postgres:16-alpine
+    container_name: budget_db_dev
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: budget_tracker
-      POSTGRES_USER: budget_user
-      POSTGRES_PASSWORD: budget_pass
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-budget_db}
+      POSTGRES_USER: ${POSTGRES_USER:-budget_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-budget_pass_dev}
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - budget_network_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-budget_user} -d ${POSTGRES_DB:-budget_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Django (Mode DEV avec hot-reload)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: budget_backend_dev
     restart: unless-stopped
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-me}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,backend:8000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-budget_user}:${POSTGRES_PASSWORD:-budget_pass_dev}@database:5432/${POSTGRES_DB:-budget_db}
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - JWT_ACCESS_TOKEN_LIFETIME=${JWT_ACCESS_TOKEN_LIFETIME:-15}
+      - JWT_REFRESH_TOKEN_LIFETIME=${JWT_REFRESH_TOKEN_LIFETIME:-7}
+    volumes:
+      # Monte le code local pour le hot-reload
+      - ./backend:/app
+      # Exclut les dépendances pour éviter les conflits
+      - /app/myvenv
+      - /app/.pytest_cache
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - budget_network_dev
+    # Commande de développement avec hot-reload
+    # Attendre que la BD soit prête avant de démarrer
+    command: >
+      sh -c "
+      echo 'Waiting for database...';
+      until python -c 'import socket; s=socket.socket(); s.connect((\"database\", 5432)); s.close()' 2>/dev/null; do
+        echo 'Database not ready, waiting...';
+        sleep 2;
+      done;
+      echo 'Database is ready!';
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000
+      "
+
+  # Frontend Nuxt.js (Mode DEV avec hot-reload)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: budget_frontend_dev
+    restart: unless-stopped
+    environment:
+      - NUXT_PUBLIC_API_BASE=http://localhost:8000
+      - NUXT_API_BASE_SERVER=http://backend:8000
+      - NODE_ENV=development
+    volumes:
+      # Monte le code local pour le hot-reload
+      - ./frontend:/app
+      # Exclut node_modules et .nuxt pour éviter les conflits
+      - /app/node_modules
+      - /app/.nuxt
+      - /app/.output
+    ports:
+      - "3000:3000"
+      # Port 24678 pour HMR - pas besoin de l'exposer
+    depends_on:
+      - backend
+    networks:
+      - budget_network_dev
+    # Commande de développement avec hot-reload
+    command: npm run dev
 
 volumes:
   postgres_data_dev:
+    driver: local
+
+networks:
+  budget_network_dev:
+    driver: bridge

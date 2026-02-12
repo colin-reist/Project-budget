@@ -9,6 +9,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     // Private keys (only available server-side)
+    apiBaseServer: process.env.NUXT_API_BASE_SERVER || process.env.NUXT_PUBLIC_API_BASE || 'http://backend:8000',
     public: {
       // Public keys that are exposed to the client
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000',
@@ -53,5 +54,11 @@ export default defineNuxtConfig({
   // Nuxt UI configuration
   ui: {
     icons: ['heroicons', 'lucide']
+  },
+
+  // Dev server configuration (pour Docker)
+  devServer: {
+    host: '0.0.0.0', // Écouter sur toutes les interfaces (nécessaire pour Docker)
+    port: 3000
   }
 })

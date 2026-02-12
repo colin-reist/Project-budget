@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+backend/.env
+frontend/.env
 
 .claude
 
@@ -32,6 +34,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+myvenv/
+backend/myvenv/
 
 # Django
 *.log
@@ -89,3 +93,8 @@ htmlcov/
 .AppleDouble
 .LSOverride
 .claude/settings.local.json
+
+# Fichiers temporaires et inutiles
+cookies.txt
+structure.txt
+/package-lock.json

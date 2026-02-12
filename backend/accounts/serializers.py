@@ -50,6 +50,36 @@ class AccountSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def create(self, validated_data):
+        """
+        Crée un compte et initialise le solde avec une transaction d'ajustement si nécessaire
+        """
+        from transactions.models import Transaction
+        from datetime import date
+        from decimal import Decimal
+
+        initial_balance = validated_data.pop('balance', Decimal('0.00'))
+
+        # Créer le compte avec balance à 0
+        instance = super().create(validated_data)
+
+        # Si un solde initial non nul est fourni, créer une transaction d'ajustement
+        if initial_balance != 0:
+            adjustment_sign = '+' if initial_balance > 0 else '-'
+
+            Transaction.objects.create(
+                user=instance.user,
+                account=instance,
+                type='adjustment',
+                amount=abs(initial_balance),
+                description=f"Solde initial du compte",
+                date=date.today(),
+                category=None,
+                notes=f"ADJUSTMENT:{adjustment_sign}"
+            )
+
+        return instance
+
     def update(self, instance, validated_data):
         """
         Met à jour le compte et crée une transaction d'ajustement si le solde change

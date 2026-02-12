@@ -27,7 +27,9 @@
       "Bash(powershell:*)",
       "Bash(pip install:*)",
       "Bash(.myvenvScriptspip install python-dotenv)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(git add:*)",
+      "Bash(docker-compose:*)"
     ]
   }
 }

@@ -29,7 +29,19 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Stage 3: Production
+# Stage 3: Development (avec hot-reload via runserver)
+FROM dependencies as development
+
+# Le code source sera monté via volume en dev
+# Pas besoin de COPY . . ici
+
+# Exposer le port
+EXPOSE 8000
+
+# Commande par défaut (peut être overridée dans docker-compose)
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Stage 4: Production
 FROM dependencies as production
 
 # Copier le code de l'application

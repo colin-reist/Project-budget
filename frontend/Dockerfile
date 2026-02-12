@@ -1,4 +1,37 @@
-# Stage 1: Build
+# Stage 1: Dependencies
+FROM node:20-alpine as dependencies
+
+WORKDIR /app
+
+# Copier package files
+COPY package*.json ./
+
+# Installer TOUTES les dépendances (dev + prod)
+# Utiliser npm install pour être plus flexible avec le lock file
+RUN npm install
+
+# Stage 2: Development (avec hot-reload)
+FROM node:20-alpine as development
+
+WORKDIR /app
+
+# Copier les dépendances depuis le stage précédent
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copier package files
+COPY package*.json ./
+
+# Le code source sera monté via volume en dev
+# Pas besoin de COPY . . ici
+
+# Exposer les ports pour dev et HMR
+EXPOSE 3000
+EXPOSE 24678
+
+# Commande par défaut (peut être overridée dans docker-compose)
+CMD ["npm", "run", "dev"]
+
+# Stage 3: Build
 FROM node:20-alpine as builder
 
 WORKDIR /app
@@ -19,7 +52,7 @@ ENV NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
 # Build de l'application
 RUN npm run build
 
-# Stage 2: Production
+# Stage 4: Production
 FROM node:20-alpine as production
 
 WORKDIR /app
