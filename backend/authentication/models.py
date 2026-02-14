@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from .api_token import APIToken, PendingAlert  # noqa: F401
 
@@ -122,6 +123,13 @@ class UserProfile(models.Model):
         choices=CURRENCY_CHOICES,
         default='CHF',
         verbose_name='Devise'
+    )
+    salary_day = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Jour du salaire',
+        help_text='Jour du mois où le salaire est versé (1-31)',
+        validators=[MinValueValidator(1), MaxValueValidator(31)]
     )
     created_at = models.DateTimeField(
         auto_now_add=True,

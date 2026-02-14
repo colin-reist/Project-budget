@@ -44,6 +44,11 @@ class Budget(models.Model):
         verbose_name='Objectif d\'épargne',
         help_text='Si coché, ce budget suit les transferts vers comptes épargne au lieu des dépenses'
     )
+    is_mandatory_savings = models.BooleanField(
+        default=False,
+        verbose_name='Épargne obligatoire',
+        help_text='Si coché, ce budget compte comme une dépense obligatoire mensuelle (ex: épargne de précaution, fond d\'urgence)'
+    )
     savings_goal = models.ForeignKey(
         'budgets.SavingsGoal',
         on_delete=models.SET_NULL,

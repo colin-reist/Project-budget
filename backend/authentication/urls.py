@@ -40,6 +40,7 @@ urlpatterns = [
     path('profile/update/', UserProfileViewSet.as_view({'put': 'update_me', 'patch': 'update_me'}), name='profile-update'),
     path('profile/change_password/', UserProfileViewSet.as_view({'post': 'change_password'}), name='profile-change-password'),
     path('profile/delete_account/', UserProfileViewSet.as_view({'delete': 'delete_account'}), name='profile-delete-account'),
+    path('profile/setup_recurring_salary/', UserProfileViewSet.as_view({'post': 'setup_recurring_salary'}), name='profile-setup-recurring-salary'),
 
     # WebAuthn / Passkey authentication
     path('webauthn/register/begin/', webauthn_register_begin, name='webauthn-register-begin'),

@@ -54,9 +54,11 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyIncome) }}
               </p>
-              <p v-if="futureIncome !== 0" class="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                ({{ formatCurrency(monthlyIncome + futureIncome) }})
-              </p>
+              <UTooltip v-if="futureIncome !== 0" text="Incluant les transactions futures planifiées">
+                <p class="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-help">
+                  ({{ formatCurrency(monthlyIncome + futureIncome) }})
+                </p>
+              </UTooltip>
             </div>
           </div>
         </div>
@@ -75,9 +77,11 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyExpenses) }}
               </p>
-              <p v-if="futureExpenses !== 0" class="text-sm text-red-600 dark:text-red-400 font-medium">
-                ({{ formatCurrency(monthlyExpenses + futureExpenses) }})
-              </p>
+              <UTooltip v-if="futureExpenses !== 0" text="Incluant les transactions futures planifiées">
+                <p class="text-sm text-red-600 dark:text-red-400 font-medium cursor-help">
+                  ({{ formatCurrency(monthlyExpenses + futureExpenses) }})
+                </p>
+              </UTooltip>
             </div>
           </div>
         </div>
@@ -96,12 +100,14 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(savings) }}
               </p>
-              <p v-if="futureSavings !== 0" :class="[
-                'text-sm font-medium',
-                (savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-              ]">
-                ({{ formatCurrency(savings + futureSavings) }})
-              </p>
+              <UTooltip v-if="futureSavings !== 0" text="Incluant les transactions futures planifiées">
+                <p :class="[
+                  'text-sm font-medium cursor-help',
+                  (savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                ]">
+                  ({{ formatCurrency(savings + futureSavings) }})
+                </p>
+              </UTooltip>
             </div>
           </div>
         </div>
@@ -231,7 +237,8 @@
                   <div class="flex items-center gap-2">
                     <UIcon :name="cat.category_icon" class="h-4 w-4" />
                     <span class="text-gray-900 dark:text-white">{{ cat.category_name }}</span>
-                    <UBadge v-if="cat.unbudgeted" color="gray" variant="subtle" size="xs">Non budgété</UBadge>
+                    <UBadge v-if="cat.is_mandatory_savings" color="blue" variant="subtle" size="xs">💰 Épargne obligatoire</UBadge>
+                    <UBadge v-else-if="cat.unbudgeted" color="gray" variant="subtle" size="xs">Non budgété</UBadge>
                   </div>
                 </td>
                 <td class="py-2 px-3 text-right text-gray-600 dark:text-gray-400">

@@ -1,5 +1,4 @@
 @echo off
-echo Starting backend and frontend...
-start "Backend Django" cmd /k "cd backend && python manage.py runserver"
-start "Frontend Nuxt" cmd /k "cd frontend && npm run dev"
-echo Both servers started in separate windows.
+REM Script helper pour Docker Compose en mode dev
+
+docker-compose -f docker-compose.dev.yml %*

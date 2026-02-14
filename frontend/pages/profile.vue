@@ -56,6 +56,23 @@
             />
           </UFormGroup>
 
+          <!-- Salary Day -->
+          <UFormGroup label="Jour de versement du salaire">
+            <UInput
+              v-model="form.salary_day"
+              type="number"
+              min="1"
+              max="28"
+              placeholder="25"
+              icon="i-heroicons-calendar"
+            />
+            <template #help>
+              <p class="text-sm text-gray-500">
+                Jour du mois où votre salaire est versé (1-28). Utilisé pour créer la transaction récurrente à la bonne date.
+              </p>
+            </template>
+          </UFormGroup>
+
           <!-- Available Budget Info (if profile exists) -->
           <div v-if="profile && profile.available_budget_info" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <h3 class="font-semibold text-blue-900 dark:text-blue-200 mb-3">Aperçu de votre budget</h3>
@@ -78,7 +95,19 @@
           </div>
 
           <!-- Actions -->
-          <div class="flex justify-end gap-3 pt-4">
+          <div class="flex justify-between items-center pt-4">
+            <UButton
+              v-if="form.monthly_income && parseFloat(form.monthly_income) > 0"
+              :icon="salaryTransactionCreated ? 'i-heroicons-check-circle' : 'i-heroicons-arrow-path'"
+              :color="salaryTransactionCreated ? 'green' : 'blue'"
+              :variant="salaryTransactionCreated ? 'soft' : 'soft'"
+              @click="createRecurringSalary"
+              :loading="creatingRecurring"
+              :disabled="salaryTransactionCreated"
+            >
+              {{ salaryTransactionCreated ? '✓ Transaction créée' : 'Créer transaction récurrente pour mon salaire' }}
+            </UButton>
+            <div v-else></div>
             <UButton type="submit" :loading="loading" size="lg">
               Enregistrer
             </UButton>
@@ -128,8 +157,10 @@ const loading = ref(false)
 const profile = ref<any>(null)
 const form = ref({
   monthly_income: '',
-  currency: 'CHF'
+  currency: 'CHF',
+  salary_day: null as number | null
 })
+const creatingRecurring = ref(false)
 
 // Fetch profile
 const fetchProfile = async () => {
@@ -138,6 +169,7 @@ const fetchProfile = async () => {
     profile.value = result.data
     form.value.monthly_income = result.data.monthly_income
     form.value.currency = result.data.currency
+    form.value.salary_day = result.data.salary_day
   }
 }
 
@@ -147,7 +179,8 @@ const handleSubmit = async () => {
 
   const result = await updateProfile({
     monthly_income: form.value.monthly_income,
-    currency: form.value.currency
+    currency: form.value.currency,
+    salary_day: form.value.salary_day ? parseInt(form.value.salary_day.toString()) : null
   })
 
   loading.value = false
@@ -165,6 +198,50 @@ const handleSubmit = async () => {
       description: 'Une erreur est survenue lors de la mise à jour du profil',
       color: 'red'
     })
+  }
+}
+
+// Créer transaction récurrente pour salaire
+const salaryTransactionCreated = ref(false)
+
+const createRecurringSalary = async () => {
+  if (salaryTransactionCreated.value) {
+    toast.add({
+      title: 'Déjà créée',
+      description: 'La transaction récurrente existe déjà',
+      color: 'blue'
+    })
+    return
+  }
+
+  creatingRecurring.value = true
+  const { apiFetch } = useApi()
+
+  try {
+    const response = await apiFetch('/api/v1/auth/profile/setup_recurring_salary/', {
+      method: 'POST',
+      body: {
+        amount: form.value.monthly_income
+      }
+    })
+
+    salaryTransactionCreated.value = true
+
+    toast.add({
+      title: '✅ Transaction créée !',
+      description: 'Votre salaire mensuel récurrent a été configuré avec succès',
+      color: 'green',
+      timeout: 5000
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Erreur',
+      description: error.data?.error || 'Impossible de créer la transaction récurrente',
+      color: 'red',
+      timeout: 5000
+    })
+  } finally {
+    creatingRecurring.value = false
   }
 }
 

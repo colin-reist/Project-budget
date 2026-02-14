@@ -209,6 +209,112 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
+    def setup_recurring_salary(self, request):
+        """
+        Créer ou mettre à jour une transaction récurrente pour le salaire mensuel.
+        Propose de créer automatiquement si le salaire est défini dans le profil.
+        """
+        from transactions.models import Transaction
+        from categories.models import Category
+        from accounts.models import Account
+        from decimal import Decimal
+        from datetime import date
+        from dateutil.relativedelta import relativedelta
+
+        user = request.user
+        profile = self.get_object()
+
+        # Vérifier si un montant de salaire est fourni ou utiliser celui du profil
+        salary_amount = request.data.get('amount')
+        if salary_amount:
+            salary_amount = Decimal(str(salary_amount))
+        elif profile.monthly_income:
+            salary_amount = profile.monthly_income
+        else:
+            return Response({
+                'error': 'Aucun montant de salaire fourni et pas de salaire dans le profil'
+            }, status=400)
+
+        # Chercher ou créer la catégorie "Salaire"
+        salary_category, created = Category.objects.get_or_create(
+            user=user,
+            name='Salaire',
+            type='income',
+            defaults={
+                'icon': 'i-heroicons-banknotes',
+                'color': 'green'
+            }
+        )
+
+        # Chercher une transaction récurrente existante pour le salaire
+        existing_transaction = Transaction.objects.filter(
+            user=user,
+            type='income',
+            category=salary_category,
+            is_recurring=True
+        ).first()
+
+        if existing_transaction:
+            # Mettre à jour le montant
+            existing_transaction.amount = salary_amount
+            existing_transaction.save()
+
+            return Response({
+                'message': 'Transaction de salaire mise à jour',
+                'transaction_id': existing_transaction.id,
+                'amount': float(salary_amount),
+                'created': False
+            })
+        else:
+            # Chercher d'abord un compte courant, sinon n'importe quel compte actif
+            account = (
+                Account.objects.filter(user=user, is_active=True, account_type='checking').first() or
+                Account.objects.filter(user=user, is_active=True).first()
+            )
+
+            if not account:
+                return Response({
+                    'error': 'Aucun compte actif trouvé. Créez un compte d\'abord.'
+                }, status=400)
+
+            # Calculer la date de la prochaine occurrence du salaire
+            today = date.today()
+            if profile.salary_day:
+                # Utiliser le jour configuré dans le profil
+                salary_day = min(profile.salary_day, 28)  # Max 28 pour éviter les problèmes avec février
+                if today.day < salary_day:
+                    # Le salaire n'est pas encore passé ce mois-ci
+                    next_salary_date = date(today.year, today.month, salary_day)
+                else:
+                    # Le salaire est déjà passé, prendre le mois prochain
+                    next_salary_date = date(today.year, today.month, salary_day) + relativedelta(months=1)
+            else:
+                # Pas de jour configuré, utiliser le 1er du mois prochain par défaut
+                next_salary_date = date(today.year, today.month, 1) + relativedelta(months=1)
+
+            # Créer la transaction récurrente
+            transaction = Transaction.objects.create(
+                user=user,
+                account=account,
+                category=salary_category,
+                type='income',
+                amount=salary_amount,
+                description=request.data.get('description', 'Salaire mensuel'),
+                date=next_salary_date,
+                is_recurring=True,
+                recurrence_frequency='monthly',
+                recurrence_interval=1,
+                source='web'
+            )
+
+            return Response({
+                'message': 'Transaction de salaire récurrente créée',
+                'transaction_id': transaction.id,
+                'amount': float(salary_amount),
+                'created': True
+            }, status=201)
+
+    @action(detail=False, methods=['post'])
     def change_password(self, request):
         """
         Change user password

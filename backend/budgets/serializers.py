@@ -23,7 +23,7 @@ class BudgetSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'category', 'category_details', 'name', 'amount',
             'period', 'period_display', 'start_date', 'end_date', 'alert_threshold',
-            'is_active', 'is_savings_goal', 'spent_amount', 'remaining_amount', 'percentage_used',
+            'is_active', 'is_savings_goal', 'is_mandatory_savings', 'spent_amount', 'remaining_amount', 'percentage_used',
             'is_over_budget', 'is_alert_triggered', 'created_at', 'updated_at'
         ]
         read_only_fields = ['user', 'created_at', 'updated_at']
@@ -111,7 +111,7 @@ class BudgetListSerializer(serializers.ModelSerializer):
         model = Budget
         fields = [
             'id', 'category', 'category_details', 'name', 'amount', 'period',
-            'period_display', 'start_date', 'end_date', 'is_active', 'is_savings_goal',
+            'period_display', 'start_date', 'end_date', 'is_active', 'is_savings_goal', 'is_mandatory_savings',
             'spent_amount', 'remaining_amount', 'percentage_used', 'is_over_budget',
             'projected_amount', 'projected_remaining_amount', 'projected_percentage_used',
             'is_projected_over_budget', 'created_at'

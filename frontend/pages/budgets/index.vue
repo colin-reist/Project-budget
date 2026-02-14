@@ -48,7 +48,8 @@ const form = ref({
   end_date: '',
   alert_threshold: 80,
   is_active: true,
-  is_savings_goal: false
+  is_savings_goal: false,
+  is_mandatory_savings: false
 })
 
 // Methods
@@ -95,7 +96,8 @@ const openModal = (budget?: Budget) => {
       end_date: budget.end_date || '',
       alert_threshold: budget.alert_threshold,
       is_active: budget.is_active,
-      is_savings_goal: budget.is_savings_goal || false
+      is_savings_goal: budget.is_savings_goal || false,
+      is_mandatory_savings: (budget as any).is_mandatory_savings || false
     }
   } else {
     editingBudget.value = null
@@ -108,7 +110,8 @@ const openModal = (budget?: Budget) => {
       end_date: '',
       alert_threshold: 80,
       is_active: true,
-      is_savings_goal: false
+      is_savings_goal: false,
+      is_mandatory_savings: false
     }
   }
   showModal.value = true
@@ -131,11 +134,12 @@ const handleSubmit = async () => {
     start_date: form.value.start_date,
     alert_threshold: form.value.alert_threshold,
     is_active: form.value.is_active,
-    is_savings_goal: form.value.is_savings_goal
+    is_savings_goal: form.value.is_savings_goal,
+    is_mandatory_savings: form.value.is_mandatory_savings
   }
 
-  // Ajouter la catégorie seulement si ce n'est pas un objectif d'épargne
-  if (!form.value.is_savings_goal && form.value.category) {
+  // Ajouter la catégorie seulement si ce n'est pas un objectif d'épargne ou épargne obligatoire
+  if (!form.value.is_savings_goal && !form.value.is_mandatory_savings && form.value.category) {
     budgetData.category = parseInt(form.value.category)
   }
 
@@ -701,9 +705,14 @@ onMounted(() => {
         <template #header>
           <div class="flex justify-between items-start">
             <div class="flex-1">
-              <h3 class="text-lg font-semibold">{{ budget.name }}</h3>
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold">{{ budget.name }}</h3>
+                <UBadge v-if="(budget as any).is_mandatory_savings" color="blue" variant="subtle" size="xs">
+                  💰 Épargne obligatoire
+                </UBadge>
+              </div>
               <p class="text-sm text-gray-500">
-                {{ budget.category_details?.name }} • {{ budget.period_display }}
+                {{ (budget as any).is_mandatory_savings ? 'Épargne mensuelle' : budget.category_details?.name }} • {{ budget.period_display }}
               </p>
             </div>
             <UBadge
@@ -872,7 +881,7 @@ onMounted(() => {
           </UFormGroup>
 
           <!-- Category (only for regular budgets) -->
-          <UFormGroup v-if="!form.is_savings_goal" label="Catégorie" required :error="formErrors.category">
+          <UFormGroup v-if="!form.is_savings_goal && !form.is_mandatory_savings" label="Catégorie" required :error="formErrors.category">
             <USelectMenu
               v-model="form.category"
               :options="categories"
@@ -889,6 +898,17 @@ onMounted(() => {
               <div class="text-sm text-green-700 dark:text-green-400">
                 <p class="font-medium">Objectif d'épargne</p>
                 <p class="mt-1">Ce budget suivra automatiquement vos transferts vers vos comptes épargne. Aucune catégorie n'est nécessaire.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info for mandatory savings -->
+          <div v-if="form.is_mandatory_savings" class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div class="flex items-start">
+              <UIcon name="i-heroicons-information-circle" class="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+              <div class="text-sm text-blue-700 dark:text-blue-400">
+                <p class="font-medium">Épargne obligatoire</p>
+                <p class="mt-1">Ce montant sera déduit de votre budget mensuel disponible, comme une dépense fixe. Idéal pour constituer un fond d'urgence ou épargner régulièrement.</p>
               </div>
             </div>
           </div>
@@ -955,6 +975,17 @@ onMounted(() => {
             <template #help>
               <p class="text-xs text-gray-500">
                 Si coché, ce budget suivra vos transferts vers vos comptes épargne au lieu des dépenses par catégorie
+              </p>
+            </template>
+          </UFormGroup>
+
+          <!-- Mandatory Savings -->
+          <UFormGroup>
+            <UCheckbox v-model="form.is_mandatory_savings" label="Épargne obligatoire" />
+            <template #help>
+              <p class="text-xs text-gray-500">
+                Si coché, ce budget compte comme une dépense obligatoire mensuelle (ex: épargne de précaution, fond d'urgence).
+                L'épargne obligatoire impacte votre budget mensuel disponible.
               </p>
             </template>
           </UFormGroup>

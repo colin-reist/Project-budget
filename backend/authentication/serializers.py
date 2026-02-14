@@ -129,6 +129,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'user',
             'monthly_income',
             'currency',
+            'salary_day',
             'available_budget_info',
             'created_at',
             'updated_at'

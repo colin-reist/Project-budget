@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import date, timedelta
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -87,9 +87,12 @@ class BudgetViewSet(viewsets.ModelViewSet):
         else:
             end = date(today.year, today.month + 1, 1) - timedelta(days=1)
 
-        # Budgets actifs mensuels (hors objectifs épargne)
+        # Budgets actifs mensuels (hors objectifs épargne ciblée)
+        # Inclut les budgets normaux ET l'épargne obligatoire
         budgets = Budget.objects.filter(
-            user=user, is_active=True, period='monthly', is_savings_goal=False
+            user=user, is_active=True, period='monthly'
+        ).filter(
+            Q(is_savings_goal=False) | Q(is_mandatory_savings=True)
         ).select_related('category')
 
         # Revenu mensuel du profil
@@ -106,24 +109,39 @@ class BudgetViewSet(viewsets.ModelViewSet):
         total_actual = Decimal('0.00')
 
         for budget in budgets:
-            if not budget.category:
-                continue
-            budgeted_category_ids.add(budget.category_id)
             spent = budget.get_spent_amount()
             total_budget += budget.amount
             total_actual += spent
 
-            categories_data.append({
-                'category_id': budget.category_id,
-                'category_name': budget.category.name,
-                'category_color': budget.category.color,
-                'category_icon': budget.category.icon,
-                'prevu': float(budget.amount),
-                'reel': float(spent),
-                'ecart': float(budget.amount - spent),
-                'is_over': spent > budget.amount,
-                'unbudgeted': False,
-            })
+            # Gérer épargne obligatoire (sans catégorie)
+            if budget.is_mandatory_savings:
+                categories_data.append({
+                    'category_id': None,
+                    'category_name': budget.name,
+                    'category_color': 'green',
+                    'category_icon': 'i-heroicons-banknotes',
+                    'prevu': float(budget.amount),
+                    'reel': float(spent),
+                    'ecart': float(budget.amount - spent),
+                    'is_over': spent > budget.amount,
+                    'unbudgeted': False,
+                    'is_mandatory_savings': True,
+                })
+            elif budget.category:
+                # Budget normal avec catégorie
+                budgeted_category_ids.add(budget.category_id)
+                categories_data.append({
+                    'category_id': budget.category_id,
+                    'category_name': budget.category.name,
+                    'category_color': budget.category.color,
+                    'category_icon': budget.category.icon,
+                    'prevu': float(budget.amount),
+                    'reel': float(spent),
+                    'ecart': float(budget.amount - spent),
+                    'is_over': spent > budget.amount,
+                    'unbudgeted': False,
+                    'is_mandatory_savings': False,
+                })
 
         # Catégories avec dépenses mais sans budget
         unbudgeted = (

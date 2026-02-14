@@ -119,6 +119,44 @@ Documentation complète des endpoints :
 
 ---
 
+## 🎨 Design & UX
+
+**[UX_AUDIT.md](./UX_AUDIT.md)** - Audit et recommandations UX
+
+Documentation des améliorations UX à implémenter :
+
+- 🔴 Problèmes critiques (onboarding, navigation, feedback)
+- 🟠 Problèmes importants (dashboard, formulaires, accessibilité)
+- 🟡 Améliorations souhaitables (mobile, recherche, dark mode)
+- 🔵 Améliorations avancées (insights, personnalisation)
+- 📊 Score UX et priorisation
+
+**Utile pour :**
+- Améliorer l'expérience utilisateur
+- Prioriser les améliorations UX
+- Référence lors du développement de nouvelles fonctionnalités
+- Audit d'accessibilité (WCAG)
+
+---
+
+## 💡 Idées de Fonctionnalités
+
+**[FEATURE_IDEAS.md](./FEATURE_IDEAS.md)** - Backlog d'idées et suggestions
+
+Catalogue de fonctionnalités potentielles suggérées par l'IA :
+
+- 🎯 15 suggestions prioritaires (split transactions, règles auto, export PDF, tags, etc.)
+- 🌟 7 suggestions avancées (prévisions IA, calendrier, multi-devises, etc.)
+- ✅ Historique des fonctionnalités implémentées
+
+**Utile pour :**
+- Inspiration pour nouvelles features
+- Planification du roadmap produit
+- Évaluation de la complexité
+- Priorisation par valeur ajoutée
+
+---
+
 ## 🚀 Déploiement
 
 **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Guide de déploiement en production
@@ -178,6 +216,13 @@ Déployer en production :
 3. Utiliser les endpoints REST
 4. Gérer l'authentification par token
 
+### Je veux améliorer l'UX/UI
+
+1. Lire [UX_AUDIT.md](./UX_AUDIT.md) - Audit complet et recommandations
+2. Consulter la section priorisation (P0, P1, P2)
+3. Choisir un point à implémenter
+4. Tester avec de vrais utilisateurs
+
 ---
 
 ## 📊 Schémas et Diagrammes
@@ -216,7 +261,9 @@ docs/
 ├── DATABASE.md         ← Schéma de base de données
 ├── DEPLOYMENT.md       ← Guide de déploiement
 ├── DOCKER.md           ← Guide Docker complet
-└── RASPBERRY_PI.md     ← Déploiement Raspberry Pi
+├── RASPBERRY_PI.md     ← Déploiement Raspberry Pi
+├── UX_AUDIT.md         ← Audit et recommandations UX
+└── FEATURE_IDEAS.md    ← Backlog d'idées de fonctionnalités
 ```
 
 ---
