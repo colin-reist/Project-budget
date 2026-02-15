@@ -39,8 +39,8 @@ WORKDIR /app
 # Copier package files
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer TOUTES les dépendances (dev + prod) nécessaires pour le build
+RUN npm install
 
 # Copier le code source
 COPY . .
@@ -62,7 +62,7 @@ COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/package*.json ./
 
 # Installer uniquement les dépendances de production
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Créer un utilisateur non-root
 RUN addgroup -g 1000 appuser && \
