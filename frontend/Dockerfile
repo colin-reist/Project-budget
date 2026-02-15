@@ -65,8 +65,8 @@ COPY --from=builder /app/package*.json ./
 RUN npm install --omit=dev
 
 # Créer un utilisateur non-root
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser && \
+RUN addgroup -g 1001 appuser && \
+    adduser -D -u 1001 -G appuser appuser && \
     chown -R appuser:appuser /app
 
 USER appuser

@@ -48,7 +48,7 @@ FROM dependencies as production
 COPY . .
 
 # Créer un utilisateur non-root
-RUN useradd -m -u 1000 appuser && \
+RUN useradd -m -u 1001 appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
