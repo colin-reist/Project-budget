@@ -31,7 +31,8 @@
       "Bash(git add:*)",
       "Bash(docker-compose:*)",
       "Bash(ls:*)",
-      "Bash(\"C:\\\\Users\\\\reist\\\\Documents\\\\GitHub\\\\Project-budget\\\\dev.bat\" << 'EOF'\n@echo off\nREM Script helper pour Docker Compose en mode dev\n\ndocker-compose -f docker-compose.dev.yml %*\nEOF)"
+      "Bash(\"C:\\\\Users\\\\reist\\\\Documents\\\\GitHub\\\\Project-budget\\\\dev.bat\" << 'EOF'\n@echo off\nREM Script helper pour Docker Compose en mode dev\n\ndocker-compose -f docker-compose.dev.yml %*\nEOF)",
+      "Bash(\"D:\\\\Projets\\\\Code\\\\Project-budget\\\\UX_QUICK_START.md\":*)"
     ]
   }
 }

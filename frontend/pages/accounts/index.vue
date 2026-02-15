@@ -34,18 +34,23 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-gray-400" />
+    <div v-if="loading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <SkeletonCard v-for="i in 3" :key="i" :lines="4" show-header show-footer />
     </div>
 
     <!-- Error State -->
-    <div v-else-if="loadError" class="text-center py-12">
-      <UIcon name="i-heroicons-exclamation-circle" class="h-12 w-12 text-red-400 mx-auto mb-3" />
-      <h3 class="text-sm font-medium text-gray-900 dark:text-white">Impossible de charger les comptes</h3>
-      <p class="mt-1 text-sm text-gray-500">Vérifiez votre connexion et réessayez.</p>
-      <div class="mt-4">
-        <UButton @click="fetchAccounts(); fetchSummary()">Réessayer</UButton>
-      </div>
+    <div v-else-if="loadError">
+      <UCard>
+        <EmptyState
+          icon="i-heroicons-exclamation-circle"
+          color="red"
+          title="Impossible de charger les comptes"
+          description="Vérifiez votre connexion internet et réessayez."
+          button-text="Réessayer"
+          button-icon="i-heroicons-arrow-path"
+          @action="fetchAccounts(); fetchSummary()"
+        />
+      </UCard>
     </div>
 
     <!-- Accounts Grid -->
@@ -76,24 +81,30 @@
 
         <div class="space-y-4">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Solde actuel</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatCurrency(parseFloat(account.current_balance), account.currency) }}
-            </p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              (Excluant les transactions futures)
-            </p>
+            <UTooltip text="Votre solde actuel, sans compter les transactions futures planifiées">
+              <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 cursor-help">Solde actuel</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ formatCurrency(parseFloat(account.current_balance), account.currency) }}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  (Excluant les transactions futures)
+                </p>
+              </div>
+            </UTooltip>
           </div>
 
-          <div v-if="account.projected_balance !== account.current_balance" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Solde projeté</p>
-            <p class="text-lg font-semibold text-blue-600 dark:text-blue-400">
-              {{ formatCurrency(parseFloat(account.projected_balance), account.currency) }}
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              (Incluant les transactions futures)
-            </p>
-          </div>
+          <UTooltip v-if="account.projected_balance !== account.current_balance" text="Votre solde futur estimé en incluant toutes les transactions planifiées">
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 cursor-help">
+              <p class="text-sm text-gray-600 dark:text-gray-400">Solde projeté</p>
+              <p class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                {{ formatCurrency(parseFloat(account.projected_balance), account.currency) }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                (Incluant les transactions futures)
+              </p>
+            </div>
+          </UTooltip>
 
           <div v-if="account.description" class="text-sm text-gray-600 dark:text-gray-400">
             {{ account.description }}
@@ -132,21 +143,14 @@
 
       <div v-if="accounts.length === 0 && !loading" class="col-span-full">
         <UCard>
-          <div class="text-center py-12">
-            <UIcon name="i-heroicons-banknotes" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-              Aucun compte
-            </h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Commencez par créer votre premier compte bancaire
-            </p>
-            <div class="mt-6">
-              <UButton @click="openAddModal">
-                <UIcon name="i-heroicons-plus" class="mr-2" />
-                Nouveau compte
-              </UButton>
-            </div>
-          </div>
+          <EmptyState
+            icon="i-heroicons-banknotes"
+            color="blue"
+            title="Créez votre premier compte 💳"
+            description="Les comptes vous permettent de gérer votre argent de manière organisée. Ajoutez votre compte courant, épargne ou carte de crédit pour commencer!"
+            button-text="Créer un compte"
+            @action="openAddModal"
+          />
         </UCard>
       </div>
     </div>

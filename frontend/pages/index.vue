@@ -16,6 +16,9 @@
         @click="showTransactionModal = true"
       >
         Nouvelle transaction
+        <template #trailing>
+          <UKbd>{{ shortcutLabel }}</UKbd>
+        </template>
       </UButton>
     </div>
 
@@ -39,8 +42,13 @@
       </div>
     </div>
 
+    <!-- Loading State: Summary Cards Skeletons -->
+    <div v-if="initialLoading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+      <SkeletonCard v-for="i in 3" :key="i" :lines="2" :show-header="false" />
+    </div>
+
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+    <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
       <UCard>
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -54,7 +62,7 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyIncome) }}
               </p>
-              <UTooltip v-if="futureIncome !== 0" text="Incluant les transactions futures planifiées">
+              <UTooltip v-if="futureIncome !== 0" text="Solde projeté incluant vos revenus futurs planifiés ce mois">
                 <p class="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-help">
                   ({{ formatCurrency(monthlyIncome + futureIncome) }})
                 </p>
@@ -77,7 +85,7 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyExpenses) }}
               </p>
-              <UTooltip v-if="futureExpenses !== 0" text="Incluant les transactions futures planifiées">
+              <UTooltip v-if="futureExpenses !== 0" text="Montant projeté incluant vos dépenses futures planifiées ce mois">
                 <p class="text-sm text-red-600 dark:text-red-400 font-medium cursor-help">
                   ({{ formatCurrency(monthlyExpenses + futureExpenses) }})
                 </p>
@@ -100,7 +108,7 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(savings) }}
               </p>
-              <UTooltip v-if="futureSavings !== 0" text="Incluant les transactions futures planifiées">
+              <UTooltip v-if="futureSavings !== 0" text="Économies projetées incluant vos transactions futures planifiées ce mois">
                 <p :class="[
                   'text-sm font-medium cursor-help',
                   (savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -122,7 +130,13 @@
           Gérer les comptes
         </NuxtLink>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+
+      <!-- Loading State: Account Cards Skeletons -->
+      <div v-if="initialLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <SkeletonCard v-for="i in 4" :key="i" :lines="2" :show-header="false" />
+      </div>
+
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <UCard v-for="account in accounts" :key="account.id" class="hover:shadow-md transition-shadow cursor-pointer" @click="openTransactionWithAccount(account.id)">
           <div class="space-y-2">
             <div class="flex items-center justify-between">
@@ -141,18 +155,14 @@
         </UCard>
 
         <UCard v-if="accounts.length === 0" class="col-span-full">
-          <div class="text-center py-8">
-            <UIcon name="i-heroicons-banknotes" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-2 text-sm font-medium">Aucun compte</h3>
-            <p class="mt-1 text-sm text-gray-500">
-              Créez votre premier compte pour commencer
-            </p>
-            <div class="mt-6">
-              <NuxtLink to="/accounts">
-                <UButton>Créer un compte</UButton>
-              </NuxtLink>
-            </div>
-          </div>
+          <EmptyState
+            icon="i-heroicons-banknotes"
+            color="blue"
+            title="Commencez votre suivi financier 💰"
+            description="Un compte, c'est comme une tirelire numérique. Ajoutez votre compte courant pour voir où part votre argent et suivre vos dépenses en temps réel!"
+            button-text="Créer mon premier compte"
+            @action="navigateTo('/accounts')"
+          />
         </UCard>
       </div>
 
@@ -273,8 +283,16 @@
           </div>
         </template>
         <div class="space-y-4">
-          <div v-if="recentTransactions.length === 0" class="text-center py-8 text-gray-500">
-            Aucune transaction récente
+          <div v-if="recentTransactions.length === 0">
+            <EmptyState
+              icon="i-heroicons-arrows-right-left"
+              color="purple"
+              title="Aucune transaction"
+              description="Commencez à enregistrer vos dépenses et revenus pour suivre votre budget!"
+              button-text="Créer une transaction"
+              button-icon="i-heroicons-plus"
+              @action="showTransactionModal = true"
+            />
           </div>
           <div
             v-for="transaction in recentTransactions"
@@ -337,6 +355,13 @@
       </UCard>
     </UModal>
 
+    <!-- Onboarding Wizard -->
+    <OnboardingWizard
+      v-model="showOnboarding"
+      @complete="handleOnboardingComplete"
+      @skip="handleOnboardingComplete"
+    />
+
     <!-- Quick Transaction Modal -->
     <UModal v-model="showTransactionModal" :ui="{ width: 'sm:max-w-lg' }">
       <UCard>
@@ -367,6 +392,8 @@
               step="0.01"
               placeholder="0.00"
               required
+              @blur="validateAmount"
+              @input="formErrors.amount = ''"
             />
           </UFormGroup>
 
@@ -378,6 +405,7 @@
               option-attribute="name"
               value-attribute="id"
               placeholder="Sélectionner un compte"
+              @update:model-value="formErrors.account = ''"
             />
           </UFormGroup>
 
@@ -408,6 +436,7 @@
             <UInput
               v-model="transactionForm.description"
               placeholder="Ex: Courses Migros"
+              @input="formErrors.description = ''"
             />
           </UFormGroup>
 
@@ -447,7 +476,11 @@ const { getTransactions, getStatistics, createTransaction, updateTransaction } =
 const { getCategories } = useCategories();
 const { getDashboardData: getBudgetDashboardData } = useBudgets();
 const { getAlerts, dismissAlert } = useAlerts();
+const { registerShortcut, getShortcutLabel } = useKeyboardShortcuts();
 const toast = useToast();
+
+// Keyboard shortcut label for the button
+const shortcutLabel = computed(() => getShortcutLabel('n', { ctrl: true }));
 
 // Reactive state
 const totalBalance = ref(0);
@@ -461,8 +494,12 @@ const futureExpenses = ref(0);
 const recentTransactions = ref<Transaction[]>([]);
 const showTransactionModal = ref(false);
 const loading = ref(false);
+const initialLoading = ref(true);
 const formErrors = ref<Record<string, string>>({});
 const budgetDashData = ref<any>(null);
+
+// Onboarding state
+const showOnboarding = ref(false);
 
 // Alerts state
 const pendingAlerts = ref<PendingAlert[]>([]);
@@ -568,6 +605,8 @@ const handleCorrection = async () => {
 // Fetch dashboard data
 const fetchDashboardData = async () => {
   try {
+    initialLoading.value = true;
+
     // Fetch all accounts to display individually
     const accountsResponse = await getAccounts({ is_active: true });
     if (accountsResponse.success && accountsResponse.data) {
@@ -582,6 +621,14 @@ const fetchDashboardData = async () => {
     const categoriesResponse = await getCategories({ is_active: true });
     if (categoriesResponse.success && categoriesResponse.data) {
       categories.value = categoriesResponse.data.results;
+    }
+
+    // Check if first time user (no accounts and no categories)
+    if (process.client && accounts.value.length === 0 && categories.value.length === 0) {
+      const hasCompletedOnboarding = localStorage.getItem('onboarding_completed');
+      if (!hasCompletedOnboarding) {
+        showOnboarding.value = true;
+      }
     }
 
     // Fetch recent transactions
@@ -608,6 +655,8 @@ const fetchDashboardData = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
+  } finally {
+    initialLoading.value = false;
   }
 };
 
@@ -675,6 +724,18 @@ const handleSubmit = async () => {
   }
 };
 
+// Real-time validation functions
+const validateAmount = () => {
+  const amount = parseFloat(transactionForm.value.amount);
+  if (!transactionForm.value.amount) {
+    formErrors.value.amount = 'Le montant est requis';
+  } else if (isNaN(amount) || amount <= 0) {
+    formErrors.value.amount = 'Le montant doit être supérieur à 0';
+  } else {
+    formErrors.value.amount = '';
+  }
+};
+
 // Close modal and reset form
 const closeModal = () => {
   showTransactionModal.value = false;
@@ -712,9 +773,28 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// Handle onboarding completion
+const handleOnboardingComplete = async () => {
+  // Reload data to show the newly created account
+  await fetchDashboardData();
+  toast.add({
+    title: 'Bienvenue! 🎉',
+    description: 'Votre compte a été créé avec succès',
+    color: 'green'
+  });
+};
+
 // Load data on mount
 onMounted(() => {
   fetchDashboardData();
   fetchAlerts();
+
+  // Register keyboard shortcut: Ctrl+N or Cmd+N for new transaction
+  registerShortcut('n', () => {
+    showTransactionModal.value = true;
+  }, {
+    modifiers: { ctrl: true },
+    description: 'Créer une nouvelle transaction'
+  });
 });
 </script>

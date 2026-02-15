@@ -608,9 +608,11 @@ onMounted(() => {
                   <div class="text-sm font-semibold">
                     {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
                   </div>
-                  <div v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" class="text-xs text-green-600 dark:text-green-400">
-                    Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
-                  </div>
+                  <UTooltip v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" text="Montant projeté incluant vos transferts futurs planifiés">
+                    <div class="text-xs text-green-600 dark:text-green-400 cursor-help">
+                      Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
+                    </div>
+                  </UTooltip>
                 </div>
               </div>
               <UProgress
@@ -620,9 +622,11 @@ onMounted(() => {
               />
               <p class="mt-1 text-xs text-gray-500">
                 {{ (budget.percentage_used ?? 0).toFixed(1) }}% de l'objectif
-                <span v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" class="text-green-600 dark:text-green-400">
-                  ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
-                </span>
+                <UTooltip v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" text="Pourcentage projeté avec vos transferts futurs planifiés">
+                  <span class="text-green-600 dark:text-green-400 cursor-help">
+                    ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
+                  </span>
+                </UTooltip>
               </p>
             </div>
 
@@ -735,9 +739,11 @@ onMounted(() => {
                 <div class="text-sm font-semibold">
                   {{ (budget.spent_amount ?? 0).toFixed(2) }} / {{ parseFloat(budget.amount).toFixed(2) }} CHF
                 </div>
-                <div v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" class="text-xs text-blue-600 dark:text-blue-400">
-                  Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
-                </div>
+                <UTooltip v-if="(budget.projected_amount ?? 0) !== (budget.spent_amount ?? 0)" text="Montant projeté incluant vos dépenses futures planifiées">
+                  <div class="text-xs text-blue-600 dark:text-blue-400 cursor-help">
+                    Projeté: {{ (budget.projected_amount ?? 0).toFixed(2) }} CHF
+                  </div>
+                </UTooltip>
               </div>
             </div>
             <UProgress
@@ -747,9 +753,11 @@ onMounted(() => {
             />
             <p class="mt-1 text-xs text-gray-500">
               {{ (budget.percentage_used ?? 0).toFixed(1) }}% utilisé
-              <span v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" class="text-blue-600 dark:text-blue-400">
-                ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
-              </span>
+              <UTooltip v-if="(budget.projected_percentage_used ?? 0) !== (budget.percentage_used ?? 0)" text="Pourcentage projeté avec vos dépenses futures planifiées">
+                <span class="text-blue-600 dark:text-blue-400 cursor-help">
+                  ({{ (budget.projected_percentage_used ?? 0).toFixed(1) }}% projeté)
+                </span>
+              </UTooltip>
             </p>
           </div>
 
@@ -846,18 +854,14 @@ onMounted(() => {
     <!-- Empty State -->
     <div v-if="budgets.length === 0 && !loading">
       <UCard class="col-span-full">
-        <div class="text-center py-12">
-          <UIcon name="i-heroicons-chart-bar" class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-medium">Aucun budget</h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Commencez par créer votre premier budget
-          </p>
-          <div class="mt-6">
-            <UButton @click="openModal()">
-              Nouveau budget
-            </UButton>
-          </div>
-        </div>
+        <EmptyState
+          icon="i-heroicons-chart-bar"
+          color="green"
+          title="Maîtrisez vos dépenses avec les budgets 📊"
+          description="Créez des budgets mensuels pour chaque catégorie de dépenses et suivez votre progression en temps réel. Recevez des alertes avant de dépasser!"
+          button-text="Créer mon premier budget"
+          @action="openModal()"
+        />
       </UCard>
     </div>
 

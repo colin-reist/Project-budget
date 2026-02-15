@@ -1346,9 +1346,13 @@ Les versions obsolètes seront maintenues pendant au moins 6 mois après l'intro
 
 ---
 
-## À compléter
+## Roadmap API
 
-- [ ] Endpoints pour export de données (CSV, PDF)
-- [ ] Webhooks pour notifications
-- [ ] Endpoints pour pièces jointes (reçus)
-- [ ] Documentation OpenAPI/Swagger
+Fonctionnalités prévues pour les prochaines versions (voir [FEATURE_IDEAS.md](./FEATURE_IDEAS.md) pour plus de détails) :
+
+- Export de données (CSV, PDF)
+- Webhooks pour notifications
+- Support des pièces jointes (reçus scannés)
+- Documentation OpenAPI/Swagger interactive
+
+**Dernière mise à jour : 2026-02-14**

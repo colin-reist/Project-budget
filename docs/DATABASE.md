@@ -569,9 +569,4 @@ CREATE POLICY transaction_isolation_policy ON transaction
 
 ---
 
-## À compléter
-
-- [ ] Définir les contraintes de suppression en cascade
-- [ ] Ajouter table d'audit pour traçabilité
-- [ ] Implémenter soft delete si nécessaire
-- [ ] Ajouter table pour pièces jointes (reçus scannés)
+**Dernière mise à jour : 2026-02-14**

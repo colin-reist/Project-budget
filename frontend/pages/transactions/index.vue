@@ -329,20 +329,46 @@ onMounted(() => {
 
     <!-- Transactions List -->
     <UCard>
-      <div v-if="loading" class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-      <div v-else-if="loadError" class="text-center py-8">
-        <UIcon name="i-heroicons-exclamation-circle" class="h-12 w-12 text-red-400 mx-auto mb-3" />
-        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Impossible de charger les transactions</h3>
-        <p class="mt-1 text-sm text-gray-500">Vérifiez votre connexion et réessayez.</p>
-        <div class="mt-4">
-          <UButton @click="fetchTransactions(); fetchStats()">Réessayer</UButton>
+      <!-- Loading State -->
+      <div v-if="loading" class="space-y-4">
+        <div v-for="i in 5" :key="i" class="py-4 flex items-center justify-between">
+          <div class="flex items-center gap-4 flex-1">
+            <USkeleton class="h-12 w-12 rounded-full" />
+            <div class="space-y-2 flex-1">
+              <USkeleton class="h-4 w-48" />
+              <USkeleton class="h-3 w-32" />
+              <USkeleton class="h-3 w-24" />
+            </div>
+            <USkeleton class="h-6 w-24" />
+          </div>
         </div>
       </div>
-      <div v-else-if="filteredTransactions.length === 0" class="text-center py-8 text-gray-500">
-        Aucune transaction trouvée
+
+      <!-- Error State -->
+      <div v-else-if="loadError">
+        <EmptyState
+          icon="i-heroicons-exclamation-circle"
+          color="red"
+          title="Impossible de charger les transactions"
+          description="Vérifiez votre connexion internet et réessayez."
+          button-text="Réessayer"
+          button-icon="i-heroicons-arrow-path"
+          @action="fetchTransactions(); fetchStats()"
+        />
       </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredTransactions.length === 0">
+        <EmptyState
+          icon="i-heroicons-arrows-right-left"
+          color="purple"
+          title="Aucune transaction trouvée"
+          description="Commencez à suivre vos finances en créant votre première transaction. Revenus, dépenses ou transferts, tout est possible!"
+          button-text="Créer une transaction"
+          @action="openModal()"
+        />
+      </div>
+
       <div v-else class="divide-y divide-gray-200">
         <div
           v-for="transaction in filteredTransactions"

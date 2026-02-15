@@ -12,69 +12,83 @@
               </NuxtLink>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Navigation Links - Reorganized for better UX -->
             <div v-if="isAuthenticated" class="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <!-- Main navigation -->
               <NuxtLink
                 to="/"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
                 active-class="border-primary-500 text-gray-900 dark:text-white"
                 inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
+                <UIcon name="i-heroicons-home" class="h-4 w-4" />
                 Dashboard
               </NuxtLink>
               <NuxtLink
-                to="/accounts"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                Comptes
-              </NuxtLink>
-              <NuxtLink
-                to="/categories"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                Catégories
-              </NuxtLink>
-              <NuxtLink
                 to="/transactions"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
                 active-class="border-primary-500 text-gray-900 dark:text-white"
                 inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
+                <UIcon name="i-heroicons-arrows-right-left" class="h-4 w-4" />
                 Transactions
               </NuxtLink>
               <NuxtLink
-                to="/budgets"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                to="/accounts"
+                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
                 active-class="border-primary-500 text-gray-900 dark:text-white"
                 inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
-                Budgets
+                <UIcon name="i-heroicons-building-library" class="h-4 w-4" />
+                Comptes
               </NuxtLink>
               <NuxtLink
                 to="/tools/savings-goal"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
                 active-class="border-primary-500 text-gray-900 dark:text-white"
                 inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
+                <UIcon name="i-heroicons-banknotes" class="h-4 w-4" />
                 Épargne
               </NuxtLink>
+
+              <!-- Configuration Dropdown -->
+              <UDropdown :items="configMenuItems" :popper="{ placement: 'bottom-start' }">
+                <button
+                  class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <UIcon name="i-heroicons-cog-6-tooth" class="h-4 w-4" />
+                  Configuration
+                  <UIcon name="i-heroicons-chevron-down" class="h-3 w-3" />
+                </button>
+              </UDropdown>
             </div>
           </div>
 
           <!-- User Menu -->
           <div v-if="isAuthenticated" class="flex items-center gap-3">
+            <!-- Keyboard Shortcuts Help Button -->
+            <UTooltip text="Raccourcis clavier (appuyez sur ?)">
+              <UButton
+                icon="i-heroicons-command-line"
+                color="gray"
+                variant="ghost"
+                aria-label="Voir les raccourcis clavier"
+                class="hidden sm:inline-flex"
+                @click="showShortcutsHelp = true"
+              />
+            </UTooltip>
+
             <!-- Theme Toggle Button -->
-            <UButton
-              :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
-              color="gray"
-              variant="ghost"
-              aria-label="Changer le thème"
-              @click="toggleTheme"
-            />
+            <UTooltip :text="isDark ? 'Mode clair' : 'Mode sombre'">
+              <UButton
+                :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
+                color="gray"
+                variant="ghost"
+                aria-label="Changer le thème"
+                @click="toggleTheme"
+              />
+            </UTooltip>
 
             <UDropdown :items="userMenuItems" :popper="{ placement: 'bottom-end' }">
               <UButton
@@ -159,25 +173,75 @@
     </USlideover>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 sm:pb-8">
       <slot />
     </main>
+
+    <!-- Bottom Navigation (Mobile only) -->
+    <nav v-if="isAuthenticated" class="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40">
+      <div class="grid grid-cols-5 h-16">
+        <NuxtLink
+          v-for="link in bottomNavLinks"
+          :key="link.to"
+          :to="link.to"
+          class="flex flex-col items-center justify-center text-xs font-medium transition-colors"
+          active-class="text-primary-600 dark:text-primary-400"
+          inactive-class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+        >
+          <UIcon :name="link.icon" class="h-6 w-6 mb-1" />
+          <span>{{ link.label }}</span>
+        </NuxtLink>
+      </div>
+    </nav>
+
+    <!-- Keyboard Shortcuts Help Modal -->
+    <KeyboardShortcutHelp v-model="showShortcutsHelp" />
   </div>
 </template>
 
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth();
+const { registerShortcut } = useKeyboardShortcuts();
 
 // Mobile menu
 const mobileMenuOpen = ref(false);
 
+// Keyboard shortcuts help
+const showShortcutsHelp = ref(false);
+
+// Navigation links for mobile slideover (all links)
 const navLinks = [
   { to: '/', label: 'Dashboard', icon: 'i-heroicons-home' },
-  { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
-  { to: '/categories', label: 'Catégories', icon: 'i-heroicons-tag' },
   { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
-  { to: '/budgets', label: 'Budgets', icon: 'i-heroicons-chart-bar' },
+  { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
   { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
+  { to: '/categories', label: 'Catégories', icon: 'i-heroicons-tag' },
+  { to: '/budgets', label: 'Budgets', icon: 'i-heroicons-chart-bar' },
+];
+
+// Bottom navigation links for mobile (main actions only)
+const bottomNavLinks = [
+  { to: '/', label: 'Accueil', icon: 'i-heroicons-home' },
+  { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
+  { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
+  { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
+  { to: '/profile', label: 'Plus', icon: 'i-heroicons-ellipsis-horizontal-circle' },
+];
+
+// Configuration dropdown menu items
+const configMenuItems = [
+  [
+    {
+      label: 'Catégories',
+      icon: 'i-heroicons-tag',
+      click: () => navigateTo('/categories'),
+    },
+    {
+      label: 'Budgets',
+      icon: 'i-heroicons-chart-bar',
+      click: () => navigateTo('/budgets'),
+    },
+  ],
 ];
 
 // Theme management
@@ -223,4 +287,14 @@ const userMenuItems = [
     },
   ],
 ];
+
+// Register global keyboard shortcuts
+onMounted(() => {
+  // ? key to open shortcuts help
+  registerShortcut('?', () => {
+    showShortcutsHelp.value = true;
+  }, {
+    description: 'Afficher l\'aide des raccourcis clavier'
+  });
+});
 </script>

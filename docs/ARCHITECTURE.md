@@ -306,9 +306,6 @@ budget-tracker/
 
 ---
 
-## À compléter
+> **Note:** Pour les détails de déploiement, backup et monitoring, consultez [DEPLOYMENT.md](./DEPLOYMENT.md) et [RASPBERRY_PI.md](./RASPBERRY_PI.md)
 
-- [ ] Diagramme de déploiement détaillé
-- [ ] Stratégie de backup
-- [ ] Monitoring et logs
-- [ ] Plan de mise à jour
+**Dernière mise à jour : 2026-02-14**
