@@ -53,6 +53,9 @@ RUN useradd -m -u 1001 appuser && \
 
 USER appuser
 
+# Créer le dossier logs
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+
 # Exposer le port
 EXPOSE 8000
 

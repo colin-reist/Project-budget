@@ -66,17 +66,17 @@ services:
     environment:
       - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
       - NODE_ENV=production
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.nuxt
+#    volumes:
+#      - ./frontend:/app
+#      - /app/node_modules
+#      - /app/.nuxt
     ports:
       - "3000:3000"
     depends_on:
       - backend
     networks:
       - budget_network
-    command: node .output/server/index.mjs
+#    command: node .output/server/index.mjs
 
   # Nginx (reverse proxy - optionnel, décommenter si nécessaire)
   # nginx:
