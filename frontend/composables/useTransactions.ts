@@ -63,7 +63,7 @@ export const useTransactions = () => {
   const updateTransaction = async (id: number, transactionData: Partial<Transaction>): Promise<{ data: Transaction | null; success: boolean; error?: any }> => {
     try {
       const data = await apiFetch<Transaction>(`/api/v1/transactions/${id}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: transactionData
       })
       return { data, success: true }

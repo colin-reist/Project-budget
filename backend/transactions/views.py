@@ -41,6 +41,29 @@ class TransactionViewSet(viewsets.ModelViewSet):
         """
         serializer.save(user=self.request.user)
 
+    def perform_update(self, serializer):
+        """
+        Lors d'une mise à jour via le web, si la transaction était ios_uncategorized
+        et qu'une catégorie est maintenant assignée, on met à jour la source à 'web'
+        afin d'indiquer que la transaction a été corrigée par l'utilisateur.
+        La source est un champ read_only dans le serializer, il faut donc passer
+        la nouvelle valeur directement via save().
+        """
+        instance = self.get_object()
+        new_source = instance.source
+
+        # Upgrade source from ios_uncategorized to web once the user
+        # has corrected/categorized the transaction through the web UI.
+        if instance.source == 'ios_uncategorized':
+            # Check if a category is being assigned in this request
+            incoming_category = serializer.validated_data.get('category', None)
+            # Use the existing category if not being changed
+            effective_category = incoming_category if 'category' in serializer.validated_data else instance.category
+            if effective_category is not None:
+                new_source = 'web'
+
+        serializer.save(source=new_source)
+
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """

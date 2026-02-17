@@ -42,7 +42,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'type_display', 'source_display',
-                           'account_details', 'category_details', 'destination_account_details']
+                           'source', 'account_details', 'category_details', 'destination_account_details']
 
     def validate(self, data):
         """

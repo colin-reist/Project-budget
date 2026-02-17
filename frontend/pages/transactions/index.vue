@@ -49,6 +49,12 @@ const form = ref({
   recurrence_end_date: ''
 })
 
+// Reset category when transaction type changes
+watch(() => form.value.type, () => {
+  form.value.category = ''
+  form.value.destination_account = ''
+})
+
 // Computed
 const filteredTransactions = computed(() => {
   return transactions.value.filter(t => {
@@ -109,10 +115,13 @@ const fetchStats = async () => {
 const openModal = (transaction?: Transaction) => {
   if (transaction) {
     editingTransaction.value = transaction
+    // Si on a les détails de catégorie et qu'elle ne correspond pas au type, on réinitialise
+    const catDetails = transaction.category_details
+    const catMismatch = catDetails != null && catDetails.type !== transaction.type
     form.value = {
       type: transaction.type,
       account: transaction.account.toString(),
-      category: transaction.category?.toString() || '',
+      category: catMismatch ? '' : (transaction.category?.toString() || ''),
       destination_account: transaction.destination_account?.toString() || '',
       amount: transaction.amount,
       description: transaction.description,
@@ -199,9 +208,17 @@ const handleSubmit = async () => {
     await fetchTransactions()
     await fetchStats()
   } else {
+    const errData = result.error?.data
+    let description = 'Une erreur est survenue'
+    if (errData) {
+      const messages = Object.entries(errData)
+        .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+        .join(' | ')
+      if (messages) description = messages
+    }
     toast.add({
       title: 'Erreur',
-      description: 'Une erreur est survenue',
+      description,
       color: 'red'
     })
   }
