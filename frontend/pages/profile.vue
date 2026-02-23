@@ -45,15 +45,28 @@
           <UFormGroup label="Devise" required>
             <USelectMenu
               v-model="form.currency"
-              :options="[
-                { label: 'Franc Suisse (CHF)', value: 'CHF' },
-                { label: 'Euro (EUR)', value: 'EUR' },
-                { label: 'Dollar US (USD)', value: 'USD' },
-                { label: 'Livre Sterling (GBP)', value: 'GBP' }
-              ]"
+              :options="currencyOptions"
               option-attribute="label"
               value-attribute="value"
-            />
+            >
+              <template #label>
+                <span class="flex items-center gap-2">
+                  <span class="text-lg">{{ getCurrencyFlag(form.currency) }}</span>
+                  <span>{{ getCurrencyLabel(form.currency) }}</span>
+                </span>
+              </template>
+              <template #option="{ option }">
+                <span class="flex items-center gap-2">
+                  <span class="text-lg">{{ option.flag }}</span>
+                  <span>{{ option.label }}</span>
+                </span>
+              </template>
+            </USelectMenu>
+            <template #help>
+              <p class="text-sm text-gray-500">
+                Tous les montants de l'application s'afficheront dans cette devise
+              </p>
+            </template>
           </UFormGroup>
 
           <!-- Salary Day -->
@@ -151,6 +164,25 @@ definePageMeta({
 const { getProfile, updateProfile, currency, fetchProfile: globalFetchProfile } = useUserProfile()
 const { user } = useAuth()
 const toast = useToast()
+
+// Currency options with flags for better mobile UX
+const currencyOptions = [
+  { label: 'Franc Suisse (CHF)', value: 'CHF', flag: '🇨🇭' },
+  { label: 'Euro (EUR)', value: 'EUR', flag: '🇪🇺' },
+  { label: 'Dollar US (USD)', value: 'USD', flag: '🇺🇸' },
+  { label: 'Livre Sterling (GBP)', value: 'GBP', flag: '🇬🇧' }
+]
+
+// Helper functions for currency display
+const getCurrencyFlag = (currencyCode: string) => {
+  const option = currencyOptions.find(c => c.value === currencyCode)
+  return option?.flag || '🌍'
+}
+
+const getCurrencyLabel = (currencyCode: string) => {
+  const option = currencyOptions.find(c => c.value === currencyCode)
+  return option?.label || currencyCode
+}
 
 // State
 const loading = ref(false)
