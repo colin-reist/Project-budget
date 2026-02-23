@@ -121,32 +121,9 @@ Documentation complète des endpoints :
 
 ## 🎨 Design & UX
 
-**[UX_AUDIT.md](./UX_AUDIT.md)** - Audit et recommandations UX
+**[CHANGELOG_UX.md](./CHANGELOG_UX.md)** - Historique des améliorations UX
 
-Documentation des améliorations UX à implémenter :
-
-- 🔴 Problèmes critiques (onboarding, navigation, feedback)
-- 🟠 Problèmes importants (dashboard, formulaires, accessibilité)
-- 🟡 Améliorations souhaitables (mobile, recherche, dark mode)
-- 🔵 Améliorations avancées (insights, personnalisation)
-- 📊 Score UX et priorisation
-
-**Utile pour :**
-- Améliorer l'expérience utilisateur
-- Prioriser les améliorations UX
-- Référence lors du développement de nouvelles fonctionnalités
-- Audit d'accessibilité (WCAG)
-
-### 🎉 **Améliorations UX Implémentées (Nouveau !)**
-
-Les améliorations UX prioritaires (P0 et P1) ont été implémentées ! Documentation complète :
-
-**Documents disponibles :**
-- **[UX_QUICK_START.md](./UX_QUICK_START.md)** - Démarrage rapide (5 min)
-- **[UX_IMPROVEMENTS_IMPLEMENTED.md](./UX_IMPROVEMENTS_IMPLEMENTED.md)** - Détails techniques complets
-- **[UX_DEVELOPER_GUIDE.md](./UX_DEVELOPER_GUIDE.md)** - Guide développeur
-- **[UX_TESTING_CHECKLIST.md](./UX_TESTING_CHECKLIST.md)** - 50+ tests à valider
-- **[CHANGELOG_UX.md](./CHANGELOG_UX.md)** - Historique des changements
+Les améliorations UX prioritaires ont été implémentées avec succès :
 
 **Améliorations implémentées (8/8) :**
 - ✅ Tooltips explicatifs sur données futures
@@ -159,6 +136,11 @@ Les améliorations UX prioritaires (P0 et P1) ont été implémentées ! Documen
 - ✅ Bottom navigation mobile
 
 **Score UX : 6.2/10 → 8.4/10 (+35%)** 🚀
+
+**Utile pour :**
+- Consulter l'historique des améliorations UX
+- Comprendre les choix de design
+- Référence pour maintenir la cohérence UX
 
 ---
 
@@ -213,9 +195,9 @@ Déployer en production :
 
 ### Je veux déployer avec Docker
 
-1. Lire [DOCKER.md](./DOCKER.md)
+1. Lire [DEPLOYMENT.md](./DEPLOYMENT.md)
 2. Suivre le Quick Start
-3. Configurer `.env` (voir [DEPLOYMENT.md](./DEPLOYMENT.md))
+3. Configurer `.env`
 4. Lancer `docker-compose up -d`
 
 ### Je veux déployer sur Raspberry Pi
@@ -241,9 +223,9 @@ Déployer en production :
 
 ### Je veux améliorer l'UX/UI
 
-1. Lire [UX_AUDIT.md](./UX_AUDIT.md) - Audit complet et recommandations
-2. Consulter la section priorisation (P0, P1, P2)
-3. Choisir un point à implémenter
+1. Lire [CHANGELOG_UX.md](./CHANGELOG_UX.md) - Historique des améliorations
+2. Consulter [ARCHITECTURE.md](./ARCHITECTURE.md) - Comprendre les patterns UX
+3. Proposer de nouvelles améliorations
 4. Tester avec de vrais utilisateurs
 
 ---
@@ -253,7 +235,7 @@ Déployer en production :
 - **Architecture système** → [ARCHITECTURE.md](./ARCHITECTURE.md)
 - **Schéma de base de données** → [DATABASE.md](./DATABASE.md)
 - **Flux d'authentification** → [ARCHITECTURE.md](./ARCHITECTURE.md#authentification)
-- **Diagramme réseau Docker** → [DOCKER.md](./DOCKER.md)
+- **Diagramme réseau Docker** → [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---
 
@@ -261,7 +243,7 @@ Déployer en production :
 
 ### Problèmes fréquents
 
-- **Docker ne démarre pas** → [DOCKER.md - Troubleshooting](./DOCKER.md#-troubleshooting)
+- **Docker ne démarre pas** → [DEPLOYMENT.md - Troubleshooting](./DEPLOYMENT.md#troubleshooting)
 - **HTTPS ne fonctionne pas** → [RASPBERRY_PI.md - Dépannage](./RASPBERRY_PI.md#-dépannage)
 - **Erreurs de base de données** → [DATABASE.md](./DATABASE.md)
 - **Erreurs API** → [API.md](./API.md)
@@ -278,22 +260,18 @@ Déployer en production :
 
 ```
 docs/
-├── README.md                          ← Vous êtes ici (Index)
+├── README.md                ← Vous êtes ici (Index)
 │
-├── 🏗️ ARCHITECTURE.md                ← Architecture technique
-├── 🔌 API.md                          ← Documentation API REST
-├── 🗄️ DATABASE.md                     ← Schéma de base de données
-├── 💡 FEATURE_IDEAS.md                ← Backlog d'idées de fonctionnalités
+├── 🏗️ ARCHITECTURE.md      ← Architecture technique
+├── 🔌 API.md                ← Documentation API REST
+├── 🗄️ DATABASE.md           ← Schéma de base de données
+├── 💡 FEATURE_IDEAS.md      ← Backlog d'idées de fonctionnalités
+├── 📱 IOS_SHORTCUT_SETUP.md ← Configuration des raccourcis iOS
 │
-├── 🚀 DEPLOYMENT.md                   ← Guide de déploiement Docker
-├── 🍓 RASPBERRY_PI.md                 ← Déploiement Raspberry Pi spécifique
+├── 🚀 DEPLOYMENT.md         ← Guide de déploiement Docker
+├── 🍓 RASPBERRY_PI.md       ← Déploiement Raspberry Pi
 │
-├── 🎨 UX_AUDIT.md                     ← Audit et recommandations UX
-├── ⚡ UX_QUICK_START.md               ← Démarrage rapide améliorations UX
-├── 🔧 UX_IMPROVEMENTS_IMPLEMENTED.md  ← Détails techniques implémentation
-├── 📖 UX_DEVELOPER_GUIDE.md           ← Guide développeur UX
-├── ✅ UX_TESTING_CHECKLIST.md         ← Checklist de tests UX
-└── 📝 CHANGELOG_UX.md                 ← Historique changements UX
+└── 📝 CHANGELOG_UX.md       ← Historique améliorations UX
 ```
 
 ---
@@ -302,7 +280,7 @@ docs/
 
 Cette documentation est maintenue à jour avec le code. Si vous trouvez des erreurs ou des informations obsolètes, n'hésitez pas à ouvrir une issue ou une pull request.
 
-**Dernière mise à jour : 2026-02-14** (Ajout documentation UX complète)
+**Dernière mise à jour : 2026-02-23** (Nettoyage documentation UX obsolète)
 
 ---
 
