@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Transaction, Account, Category } from '~/types'
+import type { StandardError } from '~/types/errors'
 
 definePageMeta({
   middleware: 'auth'
@@ -8,6 +9,7 @@ definePageMeta({
 const { getTransactions, createTransaction, updateTransaction, deleteTransaction, getStatistics } = useTransactions()
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
+const { getErrorForField, formatForToast } = useErrorHandler()
 const toast = useToast()
 
 // State
@@ -18,6 +20,7 @@ const loading = ref(false)
 const loadError = ref(false)
 const showModal = ref(false)
 const editingTransaction = ref<Transaction | null>(null)
+const formErrors = ref<StandardError | null>(null)
 const stats = ref({
   income: { total: 0, count: 0 },
   expense: { total: 0, count: 0 },
@@ -155,10 +158,12 @@ const openModal = (transaction?: Transaction) => {
 const closeModal = () => {
   showModal.value = false
   editingTransaction.value = null
+  formErrors.value = null
 }
 
 const handleSubmit = async () => {
   loading.value = true
+  formErrors.value = null
 
   const transactionData: any = {
     type: form.value.type,
@@ -207,18 +212,15 @@ const handleSubmit = async () => {
     closeModal()
     await fetchTransactions()
     await fetchStats()
-  } else {
-    const errData = result.error?.data
-    let description = 'Une erreur est survenue'
-    if (errData) {
-      const messages = Object.entries(errData)
-        .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-        .join(' | ')
-      if (messages) description = messages
-    }
+  } else if (result.error) {
+    // Capturer les erreurs pour affichage au niveau des champs
+    formErrors.value = result.error
+
+    // Afficher un toast avec les erreurs formatées
+    const errorMessage = formatForToast(result.error)
     toast.add({
       title: 'Erreur',
-      description,
+      description: errorMessage,
       color: 'red'
     })
   }
@@ -488,6 +490,7 @@ onMounted(() => {
               value-attribute="id"
               placeholder="Sélectionner un compte"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'account')" />
           </UFormGroup>
 
           <!-- Category (for income/expense) -->
@@ -499,6 +502,7 @@ onMounted(() => {
               value-attribute="id"
               placeholder="Sélectionner une catégorie"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'category')" />
           </UFormGroup>
 
           <!-- Destination Account (for transfer) -->
@@ -510,6 +514,7 @@ onMounted(() => {
               value-attribute="id"
               placeholder="Sélectionner un compte"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'destination_account')" />
           </UFormGroup>
 
           <!-- Amount -->
@@ -521,6 +526,7 @@ onMounted(() => {
               placeholder="0.00"
               required
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'amount')" />
           </UFormGroup>
 
           <!-- Description -->
@@ -529,11 +535,13 @@ onMounted(() => {
               v-model="form.description"
               placeholder="Description de la transaction"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'description')" />
           </UFormGroup>
 
           <!-- Date -->
           <UFormGroup label="Date" required>
             <UInput v-model="form.date" type="date" required />
+            <FormFieldError :error="getErrorForField(formErrors, 'date')" />
           </UFormGroup>
 
           <!-- Notes -->

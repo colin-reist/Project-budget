@@ -35,6 +35,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
             return TransactionListSerializer
         return TransactionSerializer
 
+    def get_serializer(self, *args, **kwargs):
+        """
+        Force partial=True pour les mises à jour PATCH et PUT
+        (certains proxies transforment PATCH en PUT)
+        """
+        if self.request and self.request.method in ['PATCH', 'PUT'] and self.action in ['update', 'partial_update']:
+            kwargs['partial'] = True
+        return super().get_serializer(*args, **kwargs)
+
     def perform_create(self, serializer):
         """
         Associe automatiquement l'utilisateur connecté à la transaction

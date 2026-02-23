@@ -16,6 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+
+def health_check(request):
+    return JsonResponse({'status': 'ok'})
 from rest_framework.routers import SimpleRouter
 from authentication.ios_views import (
     ios_create_transaction,
@@ -30,6 +35,7 @@ savings_router.register(r'savings-goals', SavingsGoalViewSet, basename='savings-
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/health/', health_check, name='health-check'),
 
     # API v1
     path('api/v1/auth/', include('authentication.urls')),
@@ -39,8 +45,10 @@ urlpatterns = [
     path('api/v1/budgets/', include('budgets.urls')),
     path('api/v1/', include(savings_router.urls)),
 
-    # iOS integration
+    # iOS integration — both singular and plural routes accepted so existing
+    # Shortcuts targeting either URL variant continue to work without modification.
     path('api/v1/ios/transaction/', ios_create_transaction, name='ios-transaction'),
+    path('api/v1/ios/transactions/', ios_create_transaction, name='ios-transactions'),
 
     # Alertes
     path('api/v1/alerts/', alert_list, name='alert-list'),

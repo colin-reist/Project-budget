@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Category } from '~/types'
+import type { StandardError } from '~/types/errors'
 
 definePageMeta({
   middleware: 'auth'
 })
 
 const { getCategories, createCategory, updateCategory, deleteCategory } = useCategories()
+const { getErrorForField, formatForToast } = useErrorHandler()
 const toast = useToast()
 
 // State
@@ -13,6 +15,7 @@ const categories = ref<Category[]>([])
 const loading = ref(false)
 const showModal = ref(false)
 const editingCategory = ref<Category | null>(null)
+const formErrors = ref<StandardError | null>(null)
 
 // Filters
 const filterType = ref<'' | 'income' | 'expense'>('')
@@ -101,10 +104,12 @@ const openModal = (category?: Category) => {
 const closeModal = () => {
   showModal.value = false
   editingCategory.value = null
+  formErrors.value = null
 }
 
 const handleSubmit = async () => {
   loading.value = true
+  formErrors.value = null
 
   const categoryData = {
     name: form.value.name,
@@ -130,10 +135,12 @@ const handleSubmit = async () => {
     })
     closeModal()
     await fetchCategories()
-  } else {
+  } else if (result.error) {
+    formErrors.value = result.error
+    const errorMessage = formatForToast(result.error)
     toast.add({
       title: 'Erreur',
-      description: 'Une erreur est survenue',
+      description: errorMessage,
       color: 'red'
     })
   }
@@ -328,6 +335,7 @@ onMounted(() => {
               placeholder="Ex: Alimentation"
               required
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'name')" />
           </UFormGroup>
 
           <!-- Type -->
@@ -341,6 +349,7 @@ onMounted(() => {
               option-attribute="label"
               value-attribute="value"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'category_type')" />
           </UFormGroup>
 
           <!-- Icon -->

@@ -586,8 +586,7 @@ const handleCorrection = async () => {
   correcting.value = true;
 
   const result = await updateTransaction(correctionAlert.value.payload.transaction_id, {
-    category: parseInt(String(correctionCategory.value)),
-    source: 'ios'
+    category: parseInt(String(correctionCategory.value))
   });
 
   if (result.success) {
@@ -596,6 +595,10 @@ const handleCorrection = async () => {
     showCorrectionModal.value = false;
     toast.add({ title: 'Corrigé', description: 'Catégorie mise à jour', color: 'green' });
     await fetchDashboardData();
+  } else if (result.error) {
+    const { formatForToast } = useErrorHandler();
+    const errorMessage = formatForToast(result.error);
+    toast.add({ title: 'Erreur', description: errorMessage, color: 'red' });
   } else {
     toast.add({ title: 'Erreur', description: 'Impossible de corriger la transaction', color: 'red' });
   }

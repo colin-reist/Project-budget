@@ -1,7 +1,9 @@
 import type { Transaction, PaginatedResponse } from '~/types'
+import type { StandardError } from '~/types/errors'
 
 export const useTransactions = () => {
   const { apiFetch } = useApi()
+  const { handleError } = useErrorHandler()
 
   /**
    * Récupérer la liste des transactions
@@ -15,7 +17,7 @@ export const useTransactions = () => {
     search?: string
     ordering?: string
     page?: number
-  }): Promise<{ data: PaginatedResponse<Transaction> | null; success: boolean; error?: any }> => {
+  }): Promise<{ data: PaginatedResponse<Transaction> | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<PaginatedResponse<Transaction>>('/api/v1/transactions/', {
         method: 'GET',
@@ -24,27 +26,29 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching transactions:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Récupérer une transaction par son ID
    */
-  const getTransaction = async (id: number): Promise<{ data: Transaction | null; success: boolean; error?: any }> => {
+  const getTransaction = async (id: number): Promise<{ data: Transaction | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Transaction>(`/api/v1/transactions/${id}/`)
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching transaction:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Créer une nouvelle transaction
    */
-  const createTransaction = async (transactionData: Partial<Transaction>): Promise<{ data: Transaction | null; success: boolean; error?: any }> => {
+  const createTransaction = async (transactionData: Partial<Transaction>): Promise<{ data: Transaction | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Transaction>('/api/v1/transactions/', {
         method: 'POST',
@@ -53,14 +57,15 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error creating transaction:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Mettre à jour une transaction
    */
-  const updateTransaction = async (id: number, transactionData: Partial<Transaction>): Promise<{ data: Transaction | null; success: boolean; error?: any }> => {
+  const updateTransaction = async (id: number, transactionData: Partial<Transaction>): Promise<{ data: Transaction | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Transaction>(`/api/v1/transactions/${id}/`, {
         method: 'PATCH',
@@ -69,14 +74,15 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error updating transaction:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Supprimer une transaction
    */
-  const deleteTransaction = async (id: number): Promise<{ success: boolean; error?: any }> => {
+  const deleteTransaction = async (id: number): Promise<{ success: boolean; error?: StandardError }> => {
     try {
       await apiFetch(`/api/v1/transactions/${id}/`, {
         method: 'DELETE'
@@ -84,7 +90,8 @@ export const useTransactions = () => {
       return { success: true }
     } catch (error) {
       console.error('Error deleting transaction:', error)
-      return { success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { success: false, error: standardError }
     }
   }
 
@@ -102,7 +109,7 @@ export const useTransactions = () => {
       net: number
     } | null
     success: boolean
-    error?: any
+    error?: StandardError
   }> => {
     try {
       const data = await apiFetch('/api/v1/transactions/statistics/', {
@@ -112,7 +119,8 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching statistics:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
@@ -132,7 +140,7 @@ export const useTransactions = () => {
       count: number
     }> | null
     success: boolean
-    error?: any
+    error?: StandardError
   }> => {
     try {
       const data = await apiFetch('/api/v1/transactions/by_category/', {
@@ -142,7 +150,8 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching by category:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
@@ -157,7 +166,7 @@ export const useTransactions = () => {
       net: number
     }> | null
     success: boolean
-    error?: any
+    error?: StandardError
   }> => {
     try {
       const data = await apiFetch('/api/v1/transactions/monthly_summary/', {
@@ -167,7 +176,8 @@ export const useTransactions = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching monthly summary:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 

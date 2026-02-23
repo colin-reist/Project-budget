@@ -69,11 +69,17 @@ class TransactionSerializer(serializers.ModelSerializer):
                 )
 
         # Vérifier que la catégorie correspond au type
-        if data.get('category') and data.get('type') in ['income', 'expense']:
-            if data['category'].type != data['type']:
-                raise serializers.ValidationError(
-                    {"category": f"La catégorie doit être de type {data['type']}."}
-                )
+        # Pour un PATCH, utiliser le type existant si non fourni
+        if data.get('category'):
+            transaction_type = data.get('type')
+            if transaction_type is None and self.instance:
+                transaction_type = self.instance.type
+
+            if transaction_type in ['income', 'expense']:
+                if data['category'].type != transaction_type:
+                    raise serializers.ValidationError(
+                        {"category": f"La catégorie doit être de type {transaction_type}."}
+                    )
 
         return data
 

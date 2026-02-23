@@ -1,7 +1,9 @@
 import type { Account, AccountSummary, PaginatedResponse } from '~/types';
+import type { StandardError } from '~/types/errors';
 
 export const useAccounts = () => {
   const { apiFetch } = useApi();
+  const { handleError } = useErrorHandler();
 
   const getAccounts = async (params?: {
     account_type?: string;
@@ -9,7 +11,7 @@ export const useAccounts = () => {
     is_active?: boolean;
     search?: string;
     ordering?: string;
-  }) => {
+  }): Promise<{ data?: PaginatedResponse<Account>; success: boolean; error?: StandardError }> => {
     try {
       const queryParams = new URLSearchParams();
       if (params) {
@@ -27,22 +29,24 @@ export const useAccounts = () => {
       return { success: true, data: response };
     } catch (error: any) {
       console.error('Get accounts error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.message || 'Failed to fetch accounts',
+        error: standardError,
       };
     }
   };
 
-  const getAccount = async (id: number) => {
+  const getAccount = async (id: number): Promise<{ data?: Account; success: boolean; error?: StandardError }> => {
     try {
       const account = await apiFetch<Account>(`/api/v1/accounts/${id}/`);
       return { success: true, data: account };
     } catch (error: any) {
       console.error('Get account error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.message || 'Failed to fetch account',
+        error: standardError,
       };
     }
   };
@@ -53,7 +57,7 @@ export const useAccounts = () => {
     balance: string | number;
     currency: string;
     description?: string;
-  }) => {
+  }): Promise<{ data?: Account; success: boolean; error?: StandardError }> => {
     try {
       const account = await apiFetch<Account>('/api/v1/accounts/', {
         method: 'POST',
@@ -62,15 +66,15 @@ export const useAccounts = () => {
       return { success: true, data: account };
     } catch (error: any) {
       console.error('Create account error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.data?.detail || error.message || 'Failed to create account',
-        errors: error.data || {},
+        error: standardError,
       };
     }
   };
 
-  const updateAccount = async (id: number, accountData: Partial<Account>) => {
+  const updateAccount = async (id: number, accountData: Partial<Account>): Promise<{ data?: Account; success: boolean; error?: StandardError }> => {
     try {
       const account = await apiFetch<Account>(`/api/v1/accounts/${id}/`, {
         method: 'PATCH',
@@ -79,15 +83,15 @@ export const useAccounts = () => {
       return { success: true, data: account };
     } catch (error: any) {
       console.error('Update account error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.data?.detail || error.message || 'Failed to update account',
-        errors: error.data || {},
+        error: standardError,
       };
     }
   };
 
-  const deleteAccount = async (id: number) => {
+  const deleteAccount = async (id: number): Promise<{ success: boolean; error?: StandardError }> => {
     try {
       await apiFetch(`/api/v1/accounts/${id}/`, {
         method: 'DELETE',
@@ -95,27 +99,29 @@ export const useAccounts = () => {
       return { success: true };
     } catch (error: any) {
       console.error('Delete account error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.message || 'Failed to delete account',
+        error: standardError,
       };
     }
   };
 
-  const getAccountsSummary = async () => {
+  const getAccountsSummary = async (): Promise<{ data?: AccountSummary; success: boolean; error?: StandardError }> => {
     try {
       const summary = await apiFetch<AccountSummary>('/api/v1/accounts/summary/');
       return { success: true, data: summary };
     } catch (error: any) {
       console.error('Get accounts summary error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.message || 'Failed to fetch accounts summary',
+        error: standardError,
       };
     }
   };
 
-  const toggleAccountActive = async (id: number) => {
+  const toggleAccountActive = async (id: number): Promise<{ data?: Account; success: boolean; error?: StandardError }> => {
     try {
       const account = await apiFetch<Account>(`/api/v1/accounts/${id}/toggle_active/`, {
         method: 'POST',
@@ -123,9 +129,10 @@ export const useAccounts = () => {
       return { success: true, data: account };
     } catch (error: any) {
       console.error('Toggle account active error:', error);
+      const standardError = handleError(error, { showToast: false });
       return {
         success: false,
-        error: error.message || 'Failed to toggle account status',
+        error: standardError,
       };
     }
   };

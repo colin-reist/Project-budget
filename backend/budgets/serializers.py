@@ -62,17 +62,19 @@ class BudgetSerializer(serializers.ModelSerializer):
         """
         Validations supplémentaires
         """
-        # Pour les objectifs d'épargne, la catégorie n'est pas requise
+        # Pour les objectifs d'épargne (normaux ou obligatoires), la catégorie n'est pas requise
         is_savings_goal = data.get('is_savings_goal', False)
+        is_mandatory_savings = data.get('is_mandatory_savings', False)
         category = data.get('category')
 
-        if not is_savings_goal and not category:
+        # La catégorie n'est requise que pour les budgets normaux (ni savings_goal ni mandatory_savings)
+        if not is_savings_goal and not is_mandatory_savings and not category:
             raise serializers.ValidationError({
                 'category': 'Une catégorie est requise pour les budgets normaux.'
             })
 
-        if is_savings_goal and category:
-            # Si c'est un objectif d'épargne, on ignore la catégorie
+        # Si c'est un objectif d'épargne (normal ou obligatoire), on ignore la catégorie
+        if (is_savings_goal or is_mandatory_savings) and category:
             data['category'] = None
 
         # Vérifier que end_date est après start_date

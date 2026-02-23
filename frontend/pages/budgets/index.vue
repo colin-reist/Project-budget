@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Budget, Category } from '~/types'
+import type { StandardError } from '~/types/errors'
 
 definePageMeta({
   middleware: 'auth'
@@ -10,6 +11,7 @@ const { getCategories } = useCategories()
 const { getProfile, updateProfile } = useUserProfile()
 const { getTransactions } = useTransactions()
 const { getAccounts } = useAccounts()
+const { getErrorForField, formatForToast } = useErrorHandler()
 const toast = useToast()
 
 // State
@@ -35,8 +37,8 @@ const userProfile = ref<any>(null)
 const incomeForm = ref({
   monthly_income: ''
 })
-const formErrors = ref<Record<string, string>>({})
-const incomeFormErrors = ref<Record<string, string>>({})
+const formErrors = ref<StandardError | null>(null)
+const incomeFormErrors = ref<StandardError | null>(null)
 
 // Form
 const form = ref({
@@ -84,7 +86,7 @@ const fetchProfile = async () => {
 }
 
 const openModal = (budget?: Budget) => {
-  formErrors.value = {} // Reset errors
+  formErrors.value = null // Reset errors
   if (budget) {
     editingBudget.value = budget
     form.value = {
@@ -120,12 +122,12 @@ const openModal = (budget?: Budget) => {
 const closeModal = () => {
   showModal.value = false
   editingBudget.value = null
-  formErrors.value = {} // Reset errors
+  formErrors.value = null // Reset errors
 }
 
 const handleSubmit = async () => {
   loading.value = true
-  formErrors.value = {} // Reset errors
+  formErrors.value = null // Reset errors
 
   const budgetData: any = {
     name: form.value.name,
@@ -166,21 +168,17 @@ const handleSubmit = async () => {
     await fetchBudgets()
     await fetchSummary()
     await fetchProfile()
-  } else {
-    // Parse validation errors
-    if (result.error?.data) {
-      const errors = result.error.data
-      // Convert error arrays to strings
-      Object.keys(errors).forEach(key => {
-        if (Array.isArray(errors[key])) {
-          formErrors.value[key] = errors[key][0]
-        } else if (typeof errors[key] === 'string') {
-          formErrors.value[key] = errors[key]
-        }
-      })
+  } else if (result.error) {
+    // Capturer les erreurs pour affichage au niveau des champs
+    formErrors.value = result.error
 
-      // Show first error in toast
-      const firstError = Object.values(formErrors.value)[0]
+    // Afficher un toast avec les erreurs formatées
+    const errorMessage = formatForToast(result.error)
+    toast.add({
+      title: 'Erreur',
+      description: errorMessage,
+      color: 'red'
+    })
       toast.add({
         title: 'Erreur de validation',
         description: firstError || 'Veuillez vérifier les champs du formulaire',
@@ -876,7 +874,7 @@ onMounted(() => {
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <!-- Name -->
-          <UFormGroup label="Nom du budget" required :error="formErrors.name">
+          <UFormGroup label="Nom du budget" required :error="getErrorForField(formErrors, 'name')">
             <UInput
               v-model="form.name"
               placeholder="Ex: Budget alimentation mensuel"
@@ -885,7 +883,7 @@ onMounted(() => {
           </UFormGroup>
 
           <!-- Category (only for regular budgets) -->
-          <UFormGroup v-if="!form.is_savings_goal && !form.is_mandatory_savings" label="Catégorie" required :error="formErrors.category">
+          <UFormGroup v-if="!form.is_savings_goal && !form.is_mandatory_savings" label="Catégorie" required :error="getErrorForField(formErrors, 'category')">
             <USelectMenu
               v-model="form.category"
               :options="categories"
@@ -918,7 +916,7 @@ onMounted(() => {
           </div>
 
           <!-- Amount -->
-          <UFormGroup label="Montant (CHF)" required :error="formErrors.amount">
+          <UFormGroup label="Montant (CHF)" required :error="getErrorForField(formErrors, 'amount')">
             <UInput
               v-model="form.amount"
               type="number"
@@ -929,7 +927,7 @@ onMounted(() => {
           </UFormGroup>
 
           <!-- Period -->
-          <UFormGroup label="Période" required :error="formErrors.period">
+          <UFormGroup label="Période" required :error="getErrorForField(formErrors, 'period')">
             <USelectMenu
               v-model="form.period"
               :options="[
@@ -944,16 +942,16 @@ onMounted(() => {
 
           <!-- Dates -->
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Date de début" required :error="formErrors.start_date">
+            <UFormGroup label="Date de début" required :error="getErrorForField(formErrors, 'start_date')">
               <UInput v-model="form.start_date" type="date" required />
             </UFormGroup>
-            <UFormGroup label="Date de fin (optionnelle)" :error="formErrors.end_date">
+            <UFormGroup label="Date de fin (optionnelle)" :error="getErrorForField(formErrors, 'end_date')">
               <UInput v-model="form.end_date" type="date" />
             </UFormGroup>
           </div>
 
           <!-- Alert Threshold -->
-          <UFormGroup label="Seuil d'alerte (%)" :error="formErrors.alert_threshold">
+          <UFormGroup label="Seuil d'alerte (%)" :error="getErrorForField(formErrors, 'alert_threshold')">
             <UInput
               v-model.number="form.alert_threshold"
               type="number"

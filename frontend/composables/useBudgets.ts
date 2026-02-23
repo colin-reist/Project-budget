@@ -1,7 +1,9 @@
 import type { Budget, PaginatedResponse } from '~/types'
+import type { StandardError } from '~/types/errors'
 
 export const useBudgets = () => {
   const { apiFetch } = useApi()
+  const { handleError } = useErrorHandler()
 
   /**
    * Récupérer la liste des budgets
@@ -11,7 +13,7 @@ export const useBudgets = () => {
     category?: number
     is_active?: boolean
     search?: string
-  }): Promise<{ data: PaginatedResponse<Budget> | null; success: boolean; error?: any }> => {
+  }): Promise<{ data: PaginatedResponse<Budget> | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<PaginatedResponse<Budget>>('/api/v1/budgets/', {
         method: 'GET',
@@ -20,27 +22,29 @@ export const useBudgets = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budgets:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Récupérer un budget par son ID
    */
-  const getBudget = async (id: number): Promise<{ data: Budget | null; success: boolean; error?: any }> => {
+  const getBudget = async (id: number): Promise<{ data: Budget | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Budget>(`/api/v1/budgets/${id}/`)
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budget:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Créer un nouveau budget
    */
-  const createBudget = async (budgetData: Partial<Budget>): Promise<{ data: Budget | null; success: boolean; error?: any }> => {
+  const createBudget = async (budgetData: Partial<Budget>): Promise<{ data: Budget | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Budget>('/api/v1/budgets/', {
         method: 'POST',
@@ -49,14 +53,15 @@ export const useBudgets = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error creating budget:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Mettre à jour un budget
    */
-  const updateBudget = async (id: number, budgetData: Partial<Budget>): Promise<{ data: Budget | null; success: boolean; error?: any }> => {
+  const updateBudget = async (id: number, budgetData: Partial<Budget>): Promise<{ data: Budget | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Budget>(`/api/v1/budgets/${id}/`, {
         method: 'PUT',
@@ -65,14 +70,15 @@ export const useBudgets = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error updating budget:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Supprimer un budget
    */
-  const deleteBudget = async (id: number): Promise<{ success: boolean; error?: any }> => {
+  const deleteBudget = async (id: number): Promise<{ success: boolean; error?: StandardError }> => {
     try {
       await apiFetch(`/api/v1/budgets/${id}/`, {
         method: 'DELETE'
@@ -80,7 +86,8 @@ export const useBudgets = () => {
       return { success: true }
     } catch (error) {
       console.error('Error deleting budget:', error)
-      return { success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { success: false, error: standardError }
     }
   }
 
@@ -98,21 +105,22 @@ export const useBudgets = () => {
       percentage_used: number
     } | null
     success: boolean
-    error?: any
+    error?: StandardError
   }> => {
     try {
       const data = await apiFetch('/api/v1/budgets/summary/')
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budgets summary:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Activer/Désactiver un budget
    */
-  const toggleBudgetActive = async (id: number): Promise<{ data: Budget | null; success: boolean; error?: any }> => {
+  const toggleBudgetActive = async (id: number): Promise<{ data: Budget | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<Budget>(`/api/v1/budgets/${id}/toggle_active/`, {
         method: 'POST'
@@ -120,20 +128,22 @@ export const useBudgets = () => {
       return { data, success: true }
     } catch (error) {
       console.error('Error toggling budget active:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 
   /**
    * Récupérer les données budget vs réel pour le dashboard
    */
-  const getDashboardData = async (): Promise<{ data: any | null; success: boolean; error?: any }> => {
+  const getDashboardData = async (): Promise<{ data: any | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch('/api/v1/budgets/dashboard_data/')
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budget dashboard data:', error)
-      return { data: null, success: false, error }
+      const standardError = handleError(error, { showToast: false })
+      return { data: null, success: false, error: standardError }
     }
   }
 

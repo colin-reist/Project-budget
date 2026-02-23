@@ -179,6 +179,7 @@
               v-model="form.name"
               placeholder="Ex: Compte courant principal"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'name')" />
           </UFormGroup>
 
           <UFormGroup label="Type de compte" required>
@@ -188,6 +189,7 @@
               value-attribute="value"
               option-attribute="label"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'account_type')" />
           </UFormGroup>
 
           <UFormGroup :label="editingAccount ? 'Solde actuel' : 'Solde initial'" required>
@@ -201,6 +203,7 @@
               <span v-if="!editingAccount" class="text-xs text-gray-500">Le solde initial de votre compte</span>
               <span v-else class="text-xs text-gray-500">Modifiez le solde pour créer automatiquement une transaction d'ajustement. Cet ajustement n'affectera pas vos budgets ni vos statistiques.</span>
             </template>
+            <FormFieldError :error="getErrorForField(formErrors, 'balance')" />
           </UFormGroup>
 
           <UFormGroup label="Devise" required>
@@ -208,6 +211,7 @@
               v-model="form.currency"
               :options="currencies"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'currency')" />
           </UFormGroup>
 
           <UFormGroup label="Description">
@@ -216,6 +220,7 @@
               placeholder="Description optionnelle"
               :rows="3"
             />
+            <FormFieldError :error="getErrorForField(formErrors, 'description')" />
           </UFormGroup>
 
           <div v-if="error" class="text-red-600 dark:text-red-400 text-sm">
@@ -245,12 +250,14 @@
 
 <script setup lang="ts">
 import type { Account, AccountSummary } from '~/types';
+import type { StandardError } from '~/types/errors';
 
 definePageMeta({
   middleware: 'auth'
 });
 
 const { getAccounts, createAccount, updateAccount, deleteAccount: apiDeleteAccount, getAccountsSummary, toggleAccountActive } = useAccounts();
+const { getErrorForField, formatForToast } = useErrorHandler();
 const toast = useToast();
 
 const accounts = ref<Account[]>([]);
@@ -260,6 +267,7 @@ const loadError = ref(false);
 const showModal = ref(false);
 const submitting = ref(false);
 const error = ref('');
+const formErrors = ref<StandardError | null>(null);
 const editingAccount = ref<Account | null>(null);
 
 const form = ref({
@@ -311,6 +319,7 @@ const openAddModal = () => {
     description: '',
   };
   error.value = '';
+  formErrors.value = null;
   showModal.value = true;
 };
 
@@ -324,12 +333,14 @@ const openEditModal = (account: Account) => {
     description: account.description || '',
   };
   error.value = '';
+  formErrors.value = null;
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   error.value = '';
+  formErrors.value = null;
 
   try {
     let result;
@@ -349,11 +360,33 @@ const handleSubmit = async () => {
       showModal.value = false;
       await fetchAccounts();
       await fetchSummary();
+    } else if (result.error) {
+      // Capturer les erreurs pour affichage au niveau des champs
+      formErrors.value = result.error;
+
+      // Afficher un toast avec les erreurs formatées
+      const errorMessage = formatForToast(result.error);
+      error.value = errorMessage;
+      toast.add({
+        title: 'Erreur',
+        description: errorMessage,
+        color: 'red',
+      });
     } else {
-      error.value = result.error || 'Une erreur est survenue';
+      error.value = 'Une erreur est survenue';
+      toast.add({
+        title: 'Erreur',
+        description: error.value,
+        color: 'red',
+      });
     }
   } catch (err) {
     error.value = 'Une erreur inattendue est survenue';
+    toast.add({
+      title: 'Erreur',
+      description: error.value,
+      color: 'red',
+    });
   } finally {
     submitting.value = false;
   }
