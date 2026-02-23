@@ -504,7 +504,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { getProfile, updateProfile, changePassword, deleteAccount } = useUserProfile()
+const { getProfile, updateProfile, changePassword, deleteAccount, currency, ensureProfileLoaded } = useUserProfile()
 const { logout } = useAuth()
 const { registerWebAuthn, listCredentials, deleteCredential } = useWebAuthn()
 const { getTokens, createToken, deleteToken } = useApiTokens()
@@ -847,12 +847,6 @@ const executeDeleteCredential = async () => {
 }
 
 // Utility functions
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-CH', {
-    style: 'currency',
-    currency: 'CHF'
-  }).format(amount)
-}
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -949,7 +943,8 @@ const executeDeleteToken = async () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded()
   fetchProfile()
   fetchCredentials()
   fetchTokens()

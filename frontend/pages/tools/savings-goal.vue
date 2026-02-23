@@ -285,6 +285,7 @@ definePageMeta({
 })
 
 const { createSavingsGoal, getSavingsGoals, deleteSavingsGoal, createBudgetFromGoal } = useSavingsGoals()
+const { currency, ensureProfileLoaded } = useUserProfile()
 const toast = useToast()
 
 // State
@@ -437,12 +438,6 @@ const executeDeleteGoal = async () => {
   }
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-CH', {
-    style: 'currency',
-    currency: 'CHF'
-  }).format(amount)
-}
 
 const formatDateDisplay = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -462,7 +457,8 @@ const frequencyLabel = (freq: string) => {
   return map[freq] || freq
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded()
   fetchGoals()
 })
 </script>

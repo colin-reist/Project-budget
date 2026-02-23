@@ -31,7 +31,7 @@
               required
             >
               <template #trailing>
-                <span class="text-gray-500">CHF</span>
+                <span class="text-gray-500">{{ form.currency }}</span>
               </template>
             </UInput>
             <template #help>
@@ -79,16 +79,16 @@
             <div class="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <p class="text-gray-600 dark:text-gray-400">Revenu mensuel</p>
-                <p class="font-bold text-gray-900 dark:text-white">{{ profile.available_budget_info.monthly_income.toFixed(2) }} CHF</p>
+                <p class="font-bold text-gray-900 dark:text-white">{{ formatCurrency(profile.available_budget_info.monthly_income) }}</p>
               </div>
               <div>
                 <p class="text-gray-600 dark:text-gray-400">Budget alloué</p>
-                <p class="font-bold text-blue-600">{{ profile.available_budget_info.total_allocated.toFixed(2) }} CHF</p>
+                <p class="font-bold text-blue-600">{{ formatCurrency(profile.available_budget_info.total_allocated) }}</p>
               </div>
               <div>
                 <p class="text-gray-600 dark:text-gray-400">Budget disponible</p>
                 <p class="font-bold" :class="profile.available_budget_info.available >= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ profile.available_budget_info.available.toFixed(2) }} CHF
+                  {{ formatCurrency(profile.available_budget_info.available) }}
                 </p>
               </div>
             </div>
@@ -148,7 +148,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { getProfile, updateProfile } = useUserProfile()
+const { getProfile, updateProfile, currency, fetchProfile: globalFetchProfile } = useUserProfile()
 const { user } = useAuth()
 const toast = useToast()
 
@@ -192,6 +192,8 @@ const handleSubmit = async () => {
       color: 'green'
     })
     await fetchProfile()
+    // Refresh global profile state for currency changes
+    await globalFetchProfile()
   } else {
     toast.add({
       title: 'Erreur',

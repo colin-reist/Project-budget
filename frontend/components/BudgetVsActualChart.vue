@@ -19,6 +19,7 @@ const props = defineProps<{
   data: CategoryData[]
 }>()
 
+const { currency } = useUserProfile()
 const chartContainer = ref<HTMLElement>()
 
 const renderChart = () => {
@@ -71,7 +72,7 @@ const renderChart = () => {
 
   // Axe Y
   svg.append('g')
-    .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d} CHF`))
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d} ${currency.value}`))
     .selectAll('text')
     .style('font-size', '11px')
     .style('fill', 'currentColor')

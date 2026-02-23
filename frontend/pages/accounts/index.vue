@@ -258,6 +258,7 @@ definePageMeta({
 
 const { getAccounts, createAccount, updateAccount, deleteAccount: apiDeleteAccount, getAccountsSummary, toggleAccountActive } = useAccounts();
 const { getErrorForField, formatForToast } = useErrorHandler();
+const { currency, ensureProfileLoaded } = useUserProfile();
 const toast = useToast();
 
 const accounts = ref<Account[]>([]);
@@ -446,14 +447,8 @@ const deleteAccountHandler = async (id: number) => {
   }
 };
 
-const formatCurrency = (amount: number, currency: string = 'CHF') => {
-  return new Intl.NumberFormat('fr-CH', {
-    style: 'currency',
-    currency: currency,
-  }).format(amount);
-};
-
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded();
   fetchAccounts();
   fetchSummary();
 });

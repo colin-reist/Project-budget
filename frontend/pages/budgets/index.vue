@@ -8,7 +8,7 @@ definePageMeta({
 
 const { getBudgets, createBudget, updateBudget, deleteBudget, getBudgetsSummary, toggleBudgetActive } = useBudgets()
 const { getCategories } = useCategories()
-const { getProfile, updateProfile } = useUserProfile()
+const { getProfile, updateProfile, currency, ensureProfileLoaded } = useUserProfile()
 const { getTransactions } = useTransactions()
 const { getAccounts } = useAccounts()
 const { getErrorForField, formatForToast } = useErrorHandler()
@@ -343,14 +343,6 @@ const closeTransactionsModal = () => {
   budgetTransactions.value = []
 }
 
-const formatCurrency = (amount: number | string) => {
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  return new Intl.NumberFormat('fr-CH', {
-    style: 'currency',
-    currency: 'CHF'
-  }).format(num)
-}
-
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('fr-FR', {
     day: 'numeric',
@@ -422,7 +414,8 @@ const handleIncomeUpdate = async () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded()
   fetchBudgets()
   fetchCategories()
   fetchSummary()

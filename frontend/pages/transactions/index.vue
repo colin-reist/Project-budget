@@ -10,6 +10,7 @@ const { getTransactions, createTransaction, updateTransaction, deleteTransaction
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
 const { getErrorForField, formatForToast } = useErrorHandler()
+const { currency, ensureProfileLoaded } = useUserProfile()
 const toast = useToast()
 
 // State
@@ -270,7 +271,8 @@ const getTransactionColor = (type: string) => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded()
   fetchTransactions()
   fetchAccounts()
   fetchCategories()
@@ -291,23 +293,23 @@ onMounted(() => {
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <UCard>
         <div class="text-sm text-gray-500">Revenus</div>
-        <div class="text-2xl font-bold text-green-600">{{ stats.income.total.toFixed(2) }} CHF</div>
+        <div class="text-2xl font-bold text-green-600">{{ formatCurrency(stats.income.total) }}</div>
         <div class="text-xs text-gray-400">{{ stats.income.count }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Dépenses</div>
-        <div class="text-2xl font-bold text-red-600">{{ stats.expense.total.toFixed(2) }} CHF</div>
+        <div class="text-2xl font-bold text-red-600">{{ formatCurrency(stats.expense.total) }}</div>
         <div class="text-xs text-gray-400">{{ stats.expense.count }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Transferts</div>
-        <div class="text-2xl font-bold text-blue-600">{{ stats.transfer.total.toFixed(2) }} CHF</div>
+        <div class="text-2xl font-bold text-blue-600">{{ formatCurrency(stats.transfer.total) }}</div>
         <div class="text-xs text-gray-400">{{ stats.transfer.count }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Solde net</div>
         <div class="text-2xl font-bold" :class="stats.net >= 0 ? 'text-green-600' : 'text-red-600'">
-          {{ stats.net >= 0 ? '+' : '' }}{{ stats.net.toFixed(2) }} CHF
+          {{ stats.net >= 0 ? '+' : '' }}{{ formatCurrency(Math.abs(stats.net)) }}
         </div>
         <div class="text-xs text-gray-400">Revenus - Dépenses</div>
       </UCard>

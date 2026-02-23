@@ -385,7 +385,7 @@
           </UFormGroup>
 
           <!-- Amount -->
-          <UFormGroup label="Montant (CHF)" required :error="formErrors.amount">
+          <UFormGroup :label="`Montant (${currency})`" required :error="formErrors.amount">
             <UInput
               v-model="transactionForm.amount"
               type="number"
@@ -477,6 +477,7 @@ const { getCategories } = useCategories();
 const { getDashboardData: getBudgetDashboardData } = useBudgets();
 const { getAlerts, dismissAlert } = useAlerts();
 const { registerShortcut, getShortcutLabel } = useKeyboardShortcuts();
+const { currency, ensureProfileLoaded } = useUserProfile();
 const toast = useToast();
 
 // Keyboard shortcut label for the button
@@ -761,13 +762,6 @@ const openTransactionWithAccount = (accountId: number) => {
 };
 
 // Utility functions
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount);
-};
-
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('fr-FR', {
     day: 'numeric',
@@ -788,7 +782,8 @@ const handleOnboardingComplete = async () => {
 };
 
 // Load data on mount
-onMounted(() => {
+onMounted(async () => {
+  await ensureProfileLoaded();
   fetchDashboardData();
   fetchAlerts();
 

@@ -105,7 +105,7 @@
           />
         </UFormGroup>
 
-        <UFormGroup label="Solde actuel (CHF)" required>
+        <UFormGroup :label="`Solde actuel (${currency})`" required>
           <UInput
             v-model="accountForm.balance"
             type="number"
@@ -279,11 +279,13 @@ const accountTypes = [
   { value: 'cash', label: 'Espèces' }
 ]
 
+const { currency } = useUserProfile()
+
 const accountForm = ref({
   name: '',
   account_type: 'checking',
   balance: '0.00',
-  currency: 'CHF'
+  currency: currency.value || 'CHF'
 })
 
 const { createAccount } = useAccounts()
