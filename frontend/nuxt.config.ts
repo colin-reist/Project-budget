@@ -32,7 +32,9 @@ export default defineNuxtConfig({
   },
 
   // CSS configuration
-  css: [],
+  css: [
+    '~/assets/css/mobile-improvements.css'
+  ],
 
   // Vite configuration
   vite: {

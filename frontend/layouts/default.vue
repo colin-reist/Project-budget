@@ -99,12 +99,13 @@
               />
             </UDropdown>
 
-            <!-- Mobile hamburger -->
+            <!-- Mobile hamburger - Improved touch target -->
             <UButton
               icon="i-heroicons-bars-3"
               color="gray"
               variant="ghost"
-              class="sm:hidden"
+              size="lg"
+              class="sm:hidden btn-touch-target"
               aria-label="Ouvrir le menu"
               @click="mobileMenuOpen = true"
             />
@@ -136,11 +137,11 @@
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="menu-item-mobile rounded-md font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           active-class="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
           @click="mobileMenuOpen = false"
         >
-          <UIcon :name="link.icon" class="h-5 w-5" />
+          <UIcon :name="link.icon" class="h-6 w-6" />
           {{ link.label }}
         </NuxtLink>
 
@@ -172,36 +173,40 @@
       </div>
     </USlideover>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 sm:pb-8">
+    <!-- Main Content - Improved spacing -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8">
       <slot />
     </main>
 
-    <!-- Bottom Navigation (Mobile only) -->
-    <nav v-if="isAuthenticated" class="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40">
-      <div class="grid grid-cols-5 h-16">
+    <!-- Bottom Navigation (Mobile only) - Improved touch targets -->
+    <nav v-if="isAuthenticated" class="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40 safe-area-bottom">
+      <div class="grid grid-cols-5 h-20">
         <NuxtLink
           v-for="link in bottomNavLinks"
           :key="link.to"
           :to="link.to"
-          class="flex flex-col items-center justify-center text-xs font-medium transition-colors"
-          active-class="text-primary-600 dark:text-primary-400"
-          inactive-class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          class="bottom-nav-item text-xs font-medium transition-colors"
+          active-class="text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20"
+          inactive-class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50"
         >
-          <UIcon :name="link.icon" class="h-6 w-6 mb-1" />
-          <span>{{ link.label }}</span>
+          <UIcon :name="link.icon" class="h-7 w-7 mb-1" />
+          <span class="text-[10px] sm:text-xs">{{ link.label }}</span>
         </NuxtLink>
       </div>
     </nav>
 
     <!-- Keyboard Shortcuts Help Modal -->
     <KeyboardShortcutHelp v-model="showShortcutsHelp" />
+
+    <!-- Session Timeout Warning Modal -->
+    <SessionTimeoutModal />
   </div>
 </template>
 
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth();
 const { registerShortcut } = useKeyboardShortcuts();
+useSessionTimeout();
 
 // Mobile menu
 const mobileMenuOpen = ref(false);

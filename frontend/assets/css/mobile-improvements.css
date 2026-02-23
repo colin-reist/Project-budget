@@ -1,0 +1,265 @@
+/**
+ * Mobile UI Improvements
+ * Optimizations for touch targets, typography, and spacing
+ */
+
+/* ============================================
+   BASE TYPOGRAPHY MOBILE
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Ensure readable font-size on mobile (prevents iOS zoom) */
+  html {
+    font-size: 16px;
+  }
+
+  /* Better line-height for readability */
+  body {
+    line-height: 1.6;
+  }
+
+  /* Headers optimized for mobile */
+  h1 {
+    @apply text-2xl leading-tight;
+  }
+
+  h2 {
+    @apply text-xl leading-snug;
+  }
+
+  h3 {
+    @apply text-lg leading-normal;
+  }
+}
+
+/* ============================================
+   TOUCH TARGETS
+   ============================================ */
+
+/* Minimum touch target size (44x44px Apple HIG) */
+.btn-touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+/* Large touch target (48x48px Material Design) */
+.btn-touch-target-lg {
+  @apply min-h-[48px] min-w-[48px];
+}
+
+/* Add padding to small interactive elements */
+.touch-padding {
+  @apply p-3 -m-3;
+}
+
+/* Icon button with proper touch target */
+.icon-btn {
+  @apply p-2 -m-2 inline-flex items-center justify-center min-h-[44px] min-w-[44px];
+}
+
+/* ============================================
+   FORMS MOBILE
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Inputs with proper height */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  select,
+  textarea {
+    @apply min-h-[48px] text-base;
+  }
+
+  /* Labels always readable */
+  label {
+    @apply text-base font-medium;
+  }
+
+  /* Error messages visible */
+  .error-message {
+    @apply text-sm text-red-600 dark:text-red-400 mt-1;
+  }
+}
+
+/* ============================================
+   SPACING MOBILE
+   ============================================ */
+
+/* Comfortable card padding on mobile */
+.card-mobile {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+/* Grid gaps optimized */
+.grid-mobile {
+  @apply gap-4 sm:gap-6 lg:gap-8;
+}
+
+/* Section spacing */
+.section-mobile {
+  @apply mb-6 sm:mb-8 lg:mb-12;
+}
+
+/* List item spacing */
+.list-item-mobile {
+  @apply py-3 sm:py-4;
+}
+
+/* ============================================
+   BUTTONS MOBILE
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Primary buttons full-width on mobile */
+  .btn-primary-mobile {
+    @apply w-full sm:w-auto;
+  }
+
+  /* Button groups stack on mobile */
+  .btn-group-mobile {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-3;
+  }
+
+  /* Action buttons at bottom on mobile */
+  .actions-mobile {
+    @apply fixed bottom-16 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:relative sm:bottom-auto sm:p-0 sm:border-0 sm:bg-transparent;
+  }
+}
+
+/* ============================================
+   TABLES MOBILE
+   ============================================ */
+
+/* Hide tables on mobile, show cards instead */
+.table-responsive {
+  @apply block sm:table;
+}
+
+.table-responsive thead {
+  @apply hidden sm:table-header-group;
+}
+
+.table-responsive tbody {
+  @apply block sm:table-row-group;
+}
+
+.table-responsive tr {
+  @apply block sm:table-row mb-4 sm:mb-0 border sm:border-0 rounded-lg sm:rounded-none p-4 sm:p-0;
+}
+
+.table-responsive td {
+  @apply block sm:table-cell text-left sm:text-center;
+}
+
+.table-responsive td:before {
+  content: attr(data-label);
+  @apply font-semibold mr-2 sm:hidden;
+}
+
+/* ============================================
+   MODALS MOBILE
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Full-screen modals on mobile */
+  .modal-mobile {
+    @apply fixed inset-0 z-50;
+  }
+
+  .modal-content-mobile {
+    @apply h-full overflow-y-auto;
+  }
+
+  /* Close button properly sized */
+  .modal-close-mobile {
+    @apply min-h-[44px] min-w-[44px] p-3;
+  }
+}
+
+/* ============================================
+   NAVIGATION MOBILE
+   ============================================ */
+
+/* Bottom nav with proper spacing */
+.bottom-nav-item {
+  @apply flex flex-col items-center justify-center min-h-[56px] px-2 py-1;
+}
+
+/* Hamburger menu items */
+.menu-item-mobile {
+  @apply flex items-center gap-3 px-4 py-3 min-h-[48px] text-base;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+/* Prevent text from being too close to edges */
+.safe-padding-mobile {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+/* Responsive text sizes */
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.text-responsive-xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+.text-responsive-2xl {
+  @apply text-2xl sm:text-3xl lg:text-4xl;
+}
+
+/* Prevent layout shift */
+.no-layout-shift {
+  @apply tabular-nums;
+}
+
+/* Smooth scrolling on mobile */
+.scroll-smooth-mobile {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-primary-600;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-primary-600 focus:text-white focus:px-4 focus:py-2 focus:rounded;
+}
+
+/* ============================================
+   PERFORMANCE
+   ============================================ */
+
+/* Hardware acceleration for animations */
+.hw-accelerate {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize repaints */
+.optimize-repaint {
+  contain: layout style paint;
+}
