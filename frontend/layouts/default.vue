@@ -52,6 +52,17 @@
                 Épargne
               </NuxtLink>
 
+              <!-- Analyses Dropdown -->
+              <UDropdown :items="analysesMenuItems" :popper="{ placement: 'bottom-start' }">
+                <button
+                  class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <UIcon name="i-heroicons-chart-bar-square" class="h-4 w-4" />
+                  Analyses
+                  <UIcon name="i-heroicons-chevron-down" class="h-3 w-3" />
+                </button>
+              </UDropdown>
+
               <!-- Configuration Dropdown -->
               <UDropdown :items="configMenuItems" :popper="{ placement: 'bottom-start' }">
                 <button
@@ -220,6 +231,8 @@ const navLinks = [
   { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
   { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
   { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
+  { to: '/tools/monthly-wrap', label: 'Review Mensuel', icon: 'i-heroicons-calendar' },
+  { to: '/tools/annual-wrap', label: 'Bilan Annuel', icon: 'i-heroicons-chart-bar-square' },
   { to: '/categories', label: 'Catégories', icon: 'i-heroicons-tag' },
   { to: '/budgets', label: 'Budgets', icon: 'i-heroicons-chart-bar' },
 ];
@@ -231,6 +244,22 @@ const bottomNavLinks = [
   { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
   { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
   { to: '/profile', label: 'Plus', icon: 'i-heroicons-ellipsis-horizontal-circle' },
+];
+
+// Analyses dropdown menu items
+const analysesMenuItems = [
+  [
+    {
+      label: 'Review Mensuel',
+      icon: 'i-heroicons-calendar',
+      click: () => navigateTo('/tools/monthly-wrap'),
+    },
+    {
+      label: 'Bilan Annuel',
+      icon: 'i-heroicons-chart-bar-square',
+      click: () => navigateTo('/tools/annual-wrap'),
+    },
+  ],
 ];
 
 // Configuration dropdown menu items

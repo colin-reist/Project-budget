@@ -247,34 +247,3 @@ const sampleTransactions = [
   { label: 'Remboursement', amount: 234.56, date: '2026-02-21' }
 ]
 </script>
-
-<!-- Test Amount Card Component -->
-<template>
-  <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-    <p class="text-sm text-gray-500 mb-1">{{ label }}</p>
-    <CurrencyAmount
-      :amount="amount"
-      :currency="currency"
-      :compact="compact"
-      :forceCompact="forceCompact"
-      class="text-xl font-bold"
-    />
-    <p class="text-xs text-gray-400 mt-1">
-      {{ isMobile ? '📱 Mobile' : '💻 Desktop' }}
-    </p>
-  </div>
-</template>
-
-<script setup lang="ts">
-interface Props {
-  amount: number
-  currency: string
-  label: string
-  compact?: boolean
-  forceCompact?: boolean
-}
-
-defineProps<Props>()
-
-const { isMobile } = useScreenSize()
-</script>

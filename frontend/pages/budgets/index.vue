@@ -179,18 +179,6 @@ const handleSubmit = async () => {
       description: errorMessage,
       color: 'red'
     })
-      toast.add({
-        title: 'Erreur de validation',
-        description: firstError || 'Veuillez vérifier les champs du formulaire',
-        color: 'red'
-      })
-    } else {
-      toast.add({
-        title: 'Erreur',
-        description: 'Une erreur est survenue',
-        color: 'red'
-      })
-    }
   }
 }
 
