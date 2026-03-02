@@ -80,12 +80,18 @@ class BudgetViewSet(viewsets.ModelViewSet):
         user = request.user
         today = date.today()
 
-        # Bornes du mois en cours
-        start = date(today.year, today.month, 1)
-        if today.month == 12:
-            end = date(today.year + 1, 1, 1) - timedelta(days=1)
+        # Bornes du mois sélectionné (ou mois en cours par défaut)
+        try:
+            year = int(request.query_params.get('year', today.year))
+            month = int(request.query_params.get('month', today.month))
+        except (ValueError, TypeError):
+            year, month = today.year, today.month
+
+        start = date(year, month, 1)
+        if month == 12:
+            end = date(year + 1, 1, 1) - timedelta(days=1)
         else:
-            end = date(today.year, today.month + 1, 1) - timedelta(days=1)
+            end = date(year, month + 1, 1) - timedelta(days=1)
 
         # Budgets actifs mensuels (hors objectifs épargne ciblée)
         # Inclut les budgets normaux ET l'épargne obligatoire
@@ -144,10 +150,11 @@ class BudgetViewSet(viewsets.ModelViewSet):
                 })
 
         # Catégories avec dépenses mais sans budget
+        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
         unbudgeted = (
             Transaction.objects.filter(
                 user=user, type='expense',
-                date__gte=start, date__lte=min(end, today)
+                date__gte=start, date__lte=cap
             )
             .exclude(category_id__in=budgeted_category_ids)
             .exclude(category__isnull=True)
@@ -174,7 +181,7 @@ class BudgetViewSet(viewsets.ModelViewSet):
         actual_income = (
             Transaction.objects.filter(
                 user=user, type='income',
-                date__gte=start, date__lte=min(end, today)
+                date__gte=start, date__lte=cap
             )
             .aggregate(total=Sum('amount'))['total']
             or Decimal('0.00')

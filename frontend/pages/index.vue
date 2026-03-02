@@ -1,18 +1,28 @@
 <template>
   <div>
-    <div class="mb-8 flex justify-between items-start">
+    <div class="mb-6 sm:mb-8 flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
           Dashboard
         </h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">
+        <p class="mt-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hidden sm:block">
           Vue d'ensemble de vos finances
         </p>
       </div>
+      <!-- Icon-only on mobile, full button on desktop -->
       <UButton
         icon="i-heroicons-plus"
         size="lg"
         color="primary"
+        class="sm:hidden"
+        aria-label="Nouvelle transaction"
+        @click="showTransactionModal = true"
+      />
+      <UButton
+        icon="i-heroicons-plus"
+        size="lg"
+        color="primary"
+        class="hidden sm:inline-flex"
         @click="showTransactionModal = true"
       >
         Nouvelle transaction
@@ -27,15 +37,15 @@
       <div
         v-for="alert in pendingAlerts"
         :key="alert.id"
-        class="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between"
+        class="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
-        <div class="flex items-center gap-3">
-          <UIcon name="i-heroicons-device-phone-mobile" class="h-5 w-5 text-orange-600 flex-shrink-0" />
+        <div class="flex items-start gap-3">
+          <UIcon name="i-heroicons-device-phone-mobile" class="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
           <span class="text-sm text-orange-700 dark:text-orange-400">
-            Transaction iOS : "{{ alert.payload.label }}" ({{ formatCurrency(parseFloat(alert.payload.amount)) }}) &mdash; catégorie "{{ alert.payload.category_name }}" non trouvée.
+            <strong>"{{ alert.payload.label }}"</strong> ({{ formatCurrency(parseFloat(alert.payload.amount)) }}) — catégorie "{{ alert.payload.category_name }}" non trouvée.
           </span>
         </div>
-        <div class="flex gap-2 flex-shrink-0">
+        <div class="flex gap-2 flex-shrink-0 ml-8 sm:ml-0">
           <UButton size="sm" variant="soft" @click="openCorrectionModal(alert)">Corriger</UButton>
           <UButton size="sm" variant="ghost" color="gray" @click="handleDismissAlert(alert.id)">Ignorer</UButton>
         </div>
@@ -43,23 +53,23 @@
     </div>
 
     <!-- Loading State: Summary Cards Skeletons -->
-    <div v-if="initialLoading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-      <SkeletonCard v-for="i in 3" :key="i" :lines="2" :show-header="false" />
+    <div v-if="initialLoading" class="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-5 sm:mb-8">
+      <SkeletonCard v-for="i in 3" :key="i" :lines="2" :show-header="false" :class="i === 3 ? 'col-span-2 sm:col-span-1' : ''" />
     </div>
 
     <!-- Summary Cards -->
-    <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+    <div v-else class="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-5 sm:mb-8">
       <UCard>
         <div class="flex items-center">
           <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-arrow-trending-up" class="h-8 w-8 text-blue-600" />
+            <UIcon name="i-heroicons-arrow-trending-up" class="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
           </div>
           <div class="ml-4 flex-1">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
               Revenus ce mois
             </p>
             <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyIncome) }}
               </p>
               <UTooltip v-if="futureIncome !== 0" text="Solde projeté incluant vos revenus futurs planifiés ce mois">
@@ -75,14 +85,14 @@
       <UCard>
         <div class="flex items-center">
           <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-arrow-trending-down" class="h-8 w-8 text-red-600" />
+            <UIcon name="i-heroicons-arrow-trending-down" class="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
           </div>
           <div class="ml-4 flex-1">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
               Dépenses ce mois
             </p>
             <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(monthlyExpenses) }}
               </p>
               <UTooltip v-if="futureExpenses !== 0" text="Montant projeté incluant vos dépenses futures planifiées ce mois">
@@ -95,17 +105,17 @@
         </div>
       </UCard>
 
-      <UCard>
+      <UCard class="col-span-2 sm:col-span-1">
         <div class="flex items-center">
           <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-chart-bar" class="h-8 w-8 text-purple-600" />
+            <UIcon name="i-heroicons-chart-bar" class="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
           </div>
           <div class="ml-4 flex-1">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
               Économies
             </p>
             <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(savings) }}
               </p>
               <UTooltip v-if="futureSavings !== 0" text="Économies projetées incluant vos transactions futures planifiées ce mois">
@@ -123,7 +133,7 @@
     </div>
 
     <!-- Accounts Section -->
-    <div class="mb-8">
+    <div class="mb-5 sm:mb-8">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Mes comptes</h2>
         <NuxtLink to="/accounts" class="text-sm text-primary-600 hover:text-primary-500">
@@ -132,20 +142,20 @@
       </div>
 
       <!-- Loading State: Account Cards Skeletons -->
-      <div v-if="initialLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div v-if="initialLoading" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <SkeletonCard v-for="i in 4" :key="i" :lines="2" :show-header="false" />
       </div>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <UCard v-for="account in accounts" :key="account.id" class="hover:shadow-md transition-shadow cursor-pointer" @click="openTransactionWithAccount(account.id)">
           <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ account.name }}</h3>
-              <UBadge :color="account.account_type === 'checking' ? 'blue' : account.account_type === 'savings' ? 'green' : account.account_type === 'credit_card' ? 'orange' : 'gray'" variant="subtle" size="xs">
-                {{ account.account_type_display }}
+            <div class="flex items-center justify-between gap-1">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ account.name }}</h3>
+              <UBadge :color="account.account_type === 'checking' ? 'blue' : account.account_type === 'savings' ? 'green' : account.account_type === 'credit_card' ? 'orange' : 'gray'" variant="subtle" size="xs" class="flex-shrink-0">
+                <span class="hidden sm:inline">{{ account.account_type_display }}</span>
               </UBadge>
             </div>
-            <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            <div class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
               {{ formatCurrency(parseFloat(account.current_balance || 0)) }}
             </div>
             <div class="text-xs text-gray-500">
@@ -173,7 +183,7 @@
             <UIcon name="i-heroicons-banknotes" class="h-6 w-6 text-primary-600 mr-2" />
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Solde total</span>
           </div>
-          <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+          <span class="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">
             {{ formatCurrency(totalBalance) }}
           </span>
         </div>
@@ -181,32 +191,43 @@
     </div>
 
     <!-- Budget vs Réel Section -->
-    <div v-if="budgetDashData && budgetDashData.categories.length > 0" class="mb-8">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Budget vs Réel</h2>
+    <div v-if="budgetDashData" class="mb-5 sm:mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Budget vs Réel</h2>
+        <div class="flex items-center gap-2">
+          <UButton icon="i-heroicons-chevron-left" color="gray" variant="ghost" size="sm" @click="goToPrevMonth" aria-label="Mois précédent" />
+          <span class="text-sm font-medium capitalize text-gray-700 dark:text-gray-300 min-w-[110px] text-center">{{ selectedMonthLabel }}</span>
+          <UButton icon="i-heroicons-chevron-right" color="gray" variant="ghost" size="sm" :disabled="isCurrentMonth" @click="goToNextMonth" aria-label="Mois suivant" />
+        </div>
+      </div>
+      <div v-if="budgetDashData.categories.length === 0" class="text-sm text-gray-500 dark:text-gray-400 text-center py-8 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+        Aucune donnée budgétaire pour ce mois.
+      </div>
+      <template v-else>
 
       <!-- Soldes résumé -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p class="text-sm text-gray-600 dark:text-gray-400">Solde prévisionnel</p>
-          <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
+      <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+        <div class="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Solde prévisionnel</p>
+          <p class="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400">
             {{ formatCurrency(budgetDashData.solde_previsionnel) }}
           </p>
         </div>
-        <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-          <p class="text-sm text-gray-600 dark:text-gray-400">Solde réel</p>
-          <p class="text-xl font-bold text-green-600 dark:text-green-400">
+        <div class="p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Solde réel</p>
+          <p class="text-base sm:text-xl font-bold text-green-600 dark:text-green-400">
             {{ formatCurrency(budgetDashData.solde_reel) }}
           </p>
         </div>
         <div :class="[
-          'p-4 rounded-lg border',
+          'p-3 sm:p-4 rounded-lg border',
           budgetDashData.ecart >= 0
             ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
             : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
         ]">
-          <p class="text-sm text-gray-600 dark:text-gray-400">Écart</p>
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Écart</p>
           <p :class="[
-            'text-xl font-bold',
+            'text-base sm:text-xl font-bold',
             budgetDashData.ecart >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
           ]">
             {{ budgetDashData.ecart >= 0 ? '+' : '' }}{{ formatCurrency(budgetDashData.ecart) }}
@@ -227,7 +248,39 @@
         <template #header>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Détail par catégorie</h3>
         </template>
-        <div class="overflow-x-auto">
+        <!-- Mobile: cards list -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="cat in budgetDashData.categories"
+            :key="cat.category_id"
+            class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <UIcon :name="cat.category_icon" class="h-4 w-4 flex-shrink-0" />
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ cat.category_name }}</span>
+              </div>
+              <UBadge v-if="cat.is_mandatory_savings" color="blue" variant="subtle" size="xs" class="flex-shrink-0 ml-2">Épargne</UBadge>
+              <UBadge v-else-if="cat.unbudgeted" color="gray" variant="subtle" size="xs" class="flex-shrink-0 ml-2">Non budgété</UBadge>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-xs">
+              <div>
+                <p class="text-gray-500">Prévu</p>
+                <p class="font-medium text-gray-700 dark:text-gray-300">{{ cat.prevu > 0 ? formatCurrency(cat.prevu) : '-' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500">Réel</p>
+                <p :class="['font-medium', cat.is_over ? 'text-red-600' : 'text-gray-900 dark:text-white']">{{ formatCurrency(cat.reel) }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500">Écart</p>
+                <p :class="['font-bold', cat.ecart >= 0 ? 'text-green-600' : 'text-red-600']">{{ cat.ecart >= 0 ? '+' : '' }}{{ formatCurrency(cat.ecart) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Desktop: table -->
+        <div class="hidden sm:block overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -265,6 +318,7 @@
           </table>
         </div>
       </UCard>
+      </template>
     </div>
 
     <!-- Charts and Recent Transactions -->
@@ -282,7 +336,7 @@
             </NuxtLink>
           </div>
         </template>
-        <div class="space-y-4">
+        <div>
           <div v-if="recentTransactions.length === 0">
             <EmptyState
               icon="i-heroicons-arrows-right-left"
@@ -297,29 +351,36 @@
           <div
             v-for="transaction in recentTransactions"
             :key="transaction.id"
-            class="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-0"
+            class="flex items-center gap-3 py-2.5 border-b border-gray-200 dark:border-gray-700 last:border-0"
           >
-            <div class="flex items-center">
-              <UIcon
-                v-if="transaction.source === 'ios' || transaction.source === 'ios_uncategorized'"
-                name="i-heroicons-device-phone-mobile"
-                class="h-4 w-4 text-gray-400 flex-shrink-0"
-                title="Transaction iOS"
-              />
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ transaction.description }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatDate(transaction.date) }}
-                </p>
-              </div>
-            </div>
+            <!-- Cercle coloré avec icône selon le type -->
             <div :class="[
-              'text-sm font-semibold',
-              transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+              'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
+              transaction.type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : transaction.type === 'expense' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
             ]">
-              {{ transaction.type === 'income' ? '+' : '-' }}{{ formatCurrency(Math.abs(parseFloat(transaction.amount))) }}
+              <UIcon
+                :name="transaction.type === 'income' ? 'i-heroicons-arrow-down-circle' : transaction.type === 'expense' ? 'i-heroicons-arrow-up-circle' : 'i-heroicons-arrow-right-circle'"
+                :class="[
+                  'h-4 w-4',
+                  transaction.type === 'income' ? 'text-green-600' : transaction.type === 'expense' ? 'text-red-600' : 'text-blue-600'
+                ]"
+              />
+            </div>
+            <!-- Description et date -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {{ transaction.description }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ formatDate(transaction.date) }}
+              </p>
+            </div>
+            <!-- Montant -->
+            <div :class="[
+              'text-sm font-semibold flex-shrink-0',
+              transaction.type === 'income' ? 'text-green-600' : transaction.type === 'expense' ? 'text-red-600' : 'text-blue-600'
+            ]">
+              {{ transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : '' }}{{ formatCurrency(Math.abs(parseFloat(transaction.amount))) }}
             </div>
           </div>
         </div>
@@ -362,10 +423,22 @@
       @skip="handleOnboardingComplete"
     />
 
-    <!-- Quick Transaction Modal -->
-    <UModal v-model="showTransactionModal" :ui="{ width: 'sm:max-w-lg' }">
+    <!-- Quick Transaction Modal — plein écran sur mobile, centré sur desktop -->
+    <UModal
+      v-model="showTransactionModal"
+      :ui="{
+        width: 'w-full sm:max-w-lg',
+        container: 'flex min-h-full sm:min-h-0 items-end sm:items-center justify-center',
+        base: 'relative text-left overflow-hidden w-full sm:rounded-xl rounded-t-xl rounded-b-none',
+        padding: 'p-0'
+      }"
+    >
       <UCard>
         <template #header>
+          <!-- Drag handle visuelle sur mobile -->
+          <div class="sm:hidden flex justify-center py-2 -mt-2 mb-2">
+            <div class="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+          </div>
           <h3 class="text-lg font-semibold">Nouvelle transaction</h3>
         </template>
 
@@ -381,6 +454,7 @@
               ]"
               option-attribute="label"
               value-attribute="value"
+              size="lg"
             />
           </UFormGroup>
 
@@ -392,6 +466,8 @@
               step="0.01"
               placeholder="0.00"
               required
+              size="lg"
+              inputmode="decimal"
               @blur="validateAmount"
               @input="formErrors.amount = ''"
             />
@@ -405,6 +481,7 @@
               option-attribute="name"
               value-attribute="id"
               placeholder="Sélectionner un compte"
+              size="lg"
               @update:model-value="formErrors.account = ''"
             />
           </UFormGroup>
@@ -417,6 +494,7 @@
               option-attribute="name"
               value-attribute="id"
               placeholder="Sélectionner le compte de destination"
+              size="lg"
             />
           </UFormGroup>
 
@@ -428,6 +506,7 @@
               option-attribute="name"
               value-attribute="id"
               placeholder="Sélectionner une catégorie"
+              size="lg"
             />
           </UFormGroup>
 
@@ -436,6 +515,7 @@
             <UInput
               v-model="transactionForm.description"
               placeholder="Ex: Courses Migros"
+              size="lg"
               @input="formErrors.description = ''"
             />
           </UFormGroup>
@@ -446,15 +526,16 @@
               v-model="transactionForm.date"
               type="date"
               required
+              size="lg"
             />
           </UFormGroup>
 
-          <!-- Actions -->
-          <div class="flex justify-end gap-2 pt-4">
-            <UButton color="gray" variant="ghost" @click="closeModal">
+          <!-- Actions — empilés sur mobile, alignés à droite sur desktop -->
+          <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+            <UButton block color="gray" variant="ghost" class="sm:w-auto" @click="closeModal">
               Annuler
             </UButton>
-            <UButton type="submit" :loading="loading">
+            <UButton block type="submit" class="sm:w-auto" :loading="loading">
               Créer
             </UButton>
           </div>
@@ -542,23 +623,67 @@ const futureSavings = computed(() => {
   return futureIncome.value - futureExpenses.value;
 });
 
-// Get current month date range
-const getCurrentMonthRange = () => {
+// Month navigation
+const selectedMonthDate = ref(new Date());
+const selectedYear = computed(() => selectedMonthDate.value.getFullYear());
+const selectedMonth = computed(() => selectedMonthDate.value.getMonth() + 1);
+const selectedMonthLabel = computed(() =>
+  selectedMonthDate.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+);
+const isCurrentMonth = computed(() => {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return selectedMonthDate.value.getMonth() === now.getMonth() &&
+         selectedMonthDate.value.getFullYear() === now.getFullYear();
+});
+const goToPrevMonth = async () => {
+  const d = new Date(selectedMonthDate.value);
+  d.setMonth(d.getMonth() - 1);
+  selectedMonthDate.value = d;
+  await fetchMonthData();
+};
+const goToNextMonth = async () => {
+  const d = new Date(selectedMonthDate.value);
+  d.setMonth(d.getMonth() + 1);
+  selectedMonthDate.value = d;
+  await fetchMonthData();
+};
+
+// Get selected month date range
+const getCurrentMonthRange = () => {
+  const year = selectedYear.value;
+  const month = selectedMonth.value;
+  const startOfMonth = new Date(year, month - 1, 1);
+  const endOfMonth = new Date(year, month, 0);
 
   const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
   return {
     start_date: formatDate(startOfMonth),
     end_date: formatDate(endOfMonth)
   };
+};
+
+// Fetch data for the selected month only
+const fetchMonthData = async () => {
+  const monthRange = getCurrentMonthRange();
+  const statsResponse = await getStatistics(monthRange);
+  if (statsResponse.success && statsResponse.data) {
+    monthlyIncome.value = statsResponse.data.income.total;
+    monthlyExpenses.value = statsResponse.data.expense.total;
+    savings.value = statsResponse.data.net;
+    futureIncome.value = statsResponse.data.income.future || 0;
+    futureExpenses.value = statsResponse.data.expense.future || 0;
+  }
+
+  const budgetDashResult = await getBudgetDashboardData({ year: selectedYear.value, month: selectedMonth.value });
+  if (budgetDashResult.success && budgetDashResult.data) {
+    budgetDashData.value = budgetDashResult.data;
+  }
 };
 
 // Fetch alerts
@@ -641,22 +766,7 @@ const fetchDashboardData = async () => {
       recentTransactions.value = transactionsResponse.data.results.slice(0, 5);
     }
 
-    // Fetch monthly statistics
-    const monthRange = getCurrentMonthRange();
-    const statsResponse = await getStatistics(monthRange);
-    if (statsResponse.success && statsResponse.data) {
-      monthlyIncome.value = statsResponse.data.income.total;
-      monthlyExpenses.value = statsResponse.data.expense.total;
-      savings.value = statsResponse.data.net;
-      futureIncome.value = statsResponse.data.income.future || 0;
-      futureExpenses.value = statsResponse.data.expense.future || 0;
-    }
-
-    // Fetch budget vs actual data
-    const budgetDashResult = await getBudgetDashboardData();
-    if (budgetDashResult.success && budgetDashResult.data) {
-      budgetDashData.value = budgetDashResult.data;
-    }
+    await fetchMonthData();
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
   } finally {

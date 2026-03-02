@@ -136,9 +136,10 @@ export const useBudgets = () => {
   /**
    * Récupérer les données budget vs réel pour le dashboard
    */
-  const getDashboardData = async (): Promise<{ data: any | null; success: boolean; error?: StandardError }> => {
+  const getDashboardData = async (params?: { year?: number; month?: number }): Promise<{ data: any | null; success: boolean; error?: StandardError }> => {
     try {
-      const data = await apiFetch('/api/v1/budgets/dashboard_data/')
+      const query = params ? `?year=${params.year}&month=${params.month}` : ''
+      const data = await apiFetch(`/api/v1/budgets/dashboard_data/${query}`)
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budget dashboard data:', error)
