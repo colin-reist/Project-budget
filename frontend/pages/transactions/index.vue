@@ -29,6 +29,31 @@ const stats = ref({
   net: 0
 })
 
+// Month navigation
+const currentMonthDate = ref(new Date())
+const currentMonthKey = computed(() => {
+  const d = currentMonthDate.value
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+})
+const currentMonthLabel = computed(() =>
+  currentMonthDate.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+)
+const goToPrevMonth = () => {
+  const d = new Date(currentMonthDate.value)
+  d.setMonth(d.getMonth() - 1)
+  currentMonthDate.value = d
+}
+const goToNextMonth = () => {
+  const d = new Date(currentMonthDate.value)
+  d.setMonth(d.getMonth() + 1)
+  currentMonthDate.value = d
+}
+const isCurrentMonth = computed(() => {
+  const now = new Date()
+  return currentMonthDate.value.getMonth() === now.getMonth() &&
+         currentMonthDate.value.getFullYear() === now.getFullYear()
+})
+
 // Filters
 const filters = ref({
   type: '' as '' | 'income' | 'expense' | 'transfer',
@@ -62,6 +87,8 @@ watch(() => form.value.type, () => {
 // Computed
 const filteredTransactions = computed(() => {
   return transactions.value.filter(t => {
+    // Filter by selected month
+    if (!t.date.startsWith(currentMonthKey.value)) return false
     if (filters.value.type && t.type !== filters.value.type) return false
     if (filters.value.account && t.account !== parseInt(filters.value.account)) return false
     if (filters.value.category && t.category !== parseInt(filters.value.category)) return false
@@ -72,6 +99,18 @@ const filteredTransactions = computed(() => {
     }
     return true
   })
+})
+
+const today = new Date().toISOString().split('T')[0]
+
+const monthTotals = computed(() => {
+  let totalIncome = 0
+  let totalExpense = 0
+  for (const t of filteredTransactions.value) {
+    if (t.type === 'income') totalIncome += parseFloat(t.amount)
+    else if (t.type === 'expense') totalExpense += parseFloat(t.amount)
+  }
+  return { totalIncome, totalExpense, net: totalIncome - totalExpense }
 })
 
 const incomeCategories = computed(() => categories.value.filter(c => c.type === 'income'))
@@ -281,16 +320,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold">Transactions</h1>
-      <UButton @click="openModal()" icon="i-heroicons-plus" size="lg">
+  <div class="container mx-auto px-4 py-6 sm:py-8">
+    <div class="flex justify-between items-center mb-6 sm:mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold">Transactions</h1>
+      <UButton icon="i-heroicons-plus" size="lg" class="sm:hidden" aria-label="Nouvelle transaction" @click="openModal()" />
+      <UButton icon="i-heroicons-plus" size="lg" class="hidden sm:inline-flex" @click="openModal()">
         Nouvelle transaction
       </UButton>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
       <UCard>
         <div class="text-sm text-gray-500">Revenus</div>
         <div class="text-2xl font-bold text-green-600">{{ formatCurrency(stats.income.total) }}</div>
@@ -316,8 +356,8 @@ onMounted(async () => {
     </div>
 
     <!-- Filters -->
-    <UCard class="mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <UCard class="mb-4 sm:mb-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <USelectMenu
           v-model="filters.type"
           :options="[
@@ -344,9 +384,25 @@ onMounted(async () => {
           value-attribute="id"
           placeholder="Catégorie"
         />
-        <UInput v-model="filters.search" placeholder="Rechercher..." icon="i-heroicons-magnifying-glass" />
+        <UInput v-model="filters.search" placeholder="Rechercher..." icon="i-heroicons-magnifying-glass" class="col-span-2 md:col-span-1" />
       </div>
     </UCard>
+
+    <!-- Month Navigator -->
+    <div class="flex items-center justify-between mb-4">
+      <UButton icon="i-heroicons-chevron-left" color="gray" variant="ghost" size="lg" @click="goToPrevMonth" aria-label="Mois précédent" />
+      <div class="text-center">
+        <div class="font-semibold text-lg capitalize">{{ currentMonthLabel }}</div>
+        <div v-if="monthTotals.totalIncome > 0 || monthTotals.totalExpense > 0" class="flex items-center justify-center gap-3 text-xs mt-0.5">
+          <span v-if="monthTotals.totalIncome > 0" class="text-green-600">+{{ formatCurrency(monthTotals.totalIncome) }}</span>
+          <span v-if="monthTotals.totalExpense > 0" class="text-red-600">-{{ formatCurrency(monthTotals.totalExpense) }}</span>
+          <span :class="monthTotals.net >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
+            = {{ formatCurrency(monthTotals.net) }}
+          </span>
+        </div>
+      </div>
+      <UButton icon="i-heroicons-chevron-right" color="gray" variant="ghost" size="lg" :disabled="isCurrentMonth" @click="goToNextMonth" aria-label="Mois suivant" />
+    </div>
 
     <!-- Transactions List -->
     <UCard>
@@ -390,50 +446,57 @@ onMounted(async () => {
         />
       </div>
 
-      <div v-else class="divide-y divide-gray-200">
+      <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
         <div
           v-for="transaction in filteredTransactions"
           :key="transaction.id"
-          class="py-4 flex items-center justify-between hover:bg-gray-50 px-4 -mx-4"
+          class="py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 px-4 -mx-4 transition-colors"
+          :class="transaction.date > today ? 'opacity-70' : ''"
         >
-          <div class="flex items-center gap-4 flex-1">
+          <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
             <div
-              class="w-12 h-12 rounded-full flex items-center justify-center"
-              :class="`bg-${getTransactionColor(transaction.type)}-100`"
+              class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 flex items-center justify-center relative"
+              :class="`bg-${getTransactionColor(transaction.type)}-100 dark:bg-${getTransactionColor(transaction.type)}-900/30`"
             >
               <UIcon
                 :name="transaction.type === 'income' ? 'i-heroicons-arrow-down-circle' : transaction.type === 'expense' ? 'i-heroicons-arrow-up-circle' : 'i-heroicons-arrow-right-circle'"
-                :class="`text-${getTransactionColor(transaction.type)}-600 text-xl`"
+                :class="`text-${getTransactionColor(transaction.type)}-600 text-lg sm:text-xl`"
+              />
+              <UIcon
+                v-if="transaction.date > today"
+                name="i-heroicons-clock"
+                class="absolute -bottom-0.5 -right-0.5 text-amber-500 bg-white dark:bg-gray-900 rounded-full text-xs"
               />
             </div>
-            <div class="flex-1">
-              <div class="font-medium">{{ transaction.description }}</div>
-              <div class="text-sm text-gray-500">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm sm:text-base truncate">{{ transaction.description }}</div>
+              <div class="text-xs sm:text-sm text-gray-500 truncate">
                 {{ transaction.account_details?.name }}
                 <template v-if="transaction.type === 'transfer' && transaction.destination_account_details">
                   → {{ transaction.destination_account_details.name }}
                 </template>
                 <template v-else-if="transaction.category_details">
-                  • {{ transaction.category_details.name }}
+                  · {{ transaction.category_details.name }}
                 </template>
               </div>
-              <div class="text-xs text-gray-400">{{ new Date(transaction.date).toLocaleDateString('fr-FR') }}</div>
+              <div class="text-xs text-gray-400">{{ new Date(transaction.date + 'T00:00:00').toLocaleDateString('fr-FR') }}</div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex-shrink-0 ml-2">
               <div
-                class="text-lg font-semibold"
+                class="text-base sm:text-lg font-semibold"
                 :class="`text-${getTransactionColor(transaction.type)}-600`"
               >
                 {{ transaction.type === 'expense' ? '-' : '+' }}{{ transaction.amount }} {{ transaction.account_details?.currency }}
               </div>
             </div>
           </div>
-          <div class="flex gap-2 ml-4">
+          <div class="flex gap-1 ml-2 sm:ml-4 flex-shrink-0">
             <UButton
               icon="i-heroicons-pencil"
               size="sm"
               color="gray"
               variant="ghost"
+              class="min-h-[40px] min-w-[40px]"
               aria-label="Modifier la transaction"
               @click="openModal(transaction)"
             />
@@ -442,6 +505,7 @@ onMounted(async () => {
               size="sm"
               color="red"
               variant="ghost"
+              class="min-h-[40px] min-w-[40px]"
               aria-label="Supprimer la transaction"
               @click="handleDelete(transaction)"
             />
