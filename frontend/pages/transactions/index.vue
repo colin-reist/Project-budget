@@ -6,7 +6,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { getTransactions, createTransaction, updateTransaction, deleteTransaction, getStatistics } = useTransactions()
+const { getTransactions, createTransaction, updateTransaction, deleteTransaction, getStatistics, generateRecurring } = useTransactions()
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
 const { getErrorForField, formatForToast } = useErrorHandler()
@@ -87,8 +87,6 @@ watch(() => form.value.type, () => {
 // Computed
 const filteredTransactions = computed(() => {
   return transactions.value.filter(t => {
-    // Filter by selected month
-    if (!t.date.startsWith(currentMonthKey.value)) return false
     if (filters.value.type && t.type !== filters.value.type) return false
     if (filters.value.account && t.account !== parseInt(filters.value.account)) return false
     if (filters.value.category && t.category !== parseInt(filters.value.category)) return false
@@ -104,13 +102,20 @@ const filteredTransactions = computed(() => {
 const today = new Date().toISOString().split('T')[0]
 
 const monthTotals = computed(() => {
-  let totalIncome = 0
-  let totalExpense = 0
+  let totalIncome = 0, countIncome = 0
+  let totalExpense = 0, countExpense = 0
+  let totalTransfer = 0, countTransfer = 0
   for (const t of filteredTransactions.value) {
-    if (t.type === 'income') totalIncome += parseFloat(t.amount)
-    else if (t.type === 'expense') totalExpense += parseFloat(t.amount)
+    if (t.type === 'income') { totalIncome += parseFloat(t.amount); countIncome++ }
+    else if (t.type === 'expense') { totalExpense += parseFloat(t.amount); countExpense++ }
+    else if (t.type === 'transfer') { totalTransfer += parseFloat(t.amount); countTransfer++ }
   }
-  return { totalIncome, totalExpense, net: totalIncome - totalExpense }
+  return {
+    totalIncome, countIncome,
+    totalExpense, countExpense,
+    totalTransfer, countTransfer,
+    net: totalIncome - totalExpense
+  }
 })
 
 const incomeCategories = computed(() => categories.value.filter(c => c.type === 'income'))
@@ -125,7 +130,16 @@ const availableCategories = computed(() => {
 const fetchTransactions = async () => {
   loading.value = true
   loadError.value = false
-  const result = await getTransactions({ ordering: '-date,-created_at' })
+  const d = currentMonthDate.value
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const lastDay = new Date(year, d.getMonth() + 1, 0).getDate()
+  const result = await getTransactions({
+    ordering: '-date,-created_at',
+    start_date: `${year}-${month}-01`,
+    end_date: `${year}-${month}-${lastDay}`,
+    page_size: 500
+  })
   if (result.success && result.data) {
     transactions.value = result.data.results
   } else {
@@ -309,9 +323,15 @@ const getTransactionColor = (type: string) => {
   }
 }
 
+// Reload transactions when month changes
+watch(currentMonthDate, () => {
+  fetchTransactions()
+})
+
 // Lifecycle
 onMounted(async () => {
   await ensureProfileLoaded()
+  await generateRecurring()
   fetchTransactions()
   fetchAccounts()
   fetchCategories()
@@ -333,23 +353,23 @@ onMounted(async () => {
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
       <UCard>
         <div class="text-sm text-gray-500">Revenus</div>
-        <div class="text-2xl font-bold text-green-600">{{ formatCurrency(stats.income.total) }}</div>
-        <div class="text-xs text-gray-400">{{ stats.income.count }} transactions</div>
+        <div class="text-2xl font-bold text-green-600">{{ formatCurrency(monthTotals.totalIncome) }}</div>
+        <div class="text-xs text-gray-400">{{ monthTotals.countIncome }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Dépenses</div>
-        <div class="text-2xl font-bold text-red-600">{{ formatCurrency(stats.expense.total) }}</div>
-        <div class="text-xs text-gray-400">{{ stats.expense.count }} transactions</div>
+        <div class="text-2xl font-bold text-red-600">{{ formatCurrency(monthTotals.totalExpense) }}</div>
+        <div class="text-xs text-gray-400">{{ monthTotals.countExpense }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Transferts</div>
-        <div class="text-2xl font-bold text-blue-600">{{ formatCurrency(stats.transfer.total) }}</div>
-        <div class="text-xs text-gray-400">{{ stats.transfer.count }} transactions</div>
+        <div class="text-2xl font-bold text-blue-600">{{ formatCurrency(monthTotals.totalTransfer) }}</div>
+        <div class="text-xs text-gray-400">{{ monthTotals.countTransfer }} transactions</div>
       </UCard>
       <UCard>
         <div class="text-sm text-gray-500">Solde net</div>
-        <div class="text-2xl font-bold" :class="stats.net >= 0 ? 'text-green-600' : 'text-red-600'">
-          {{ stats.net >= 0 ? '+' : '' }}{{ formatCurrency(Math.abs(stats.net)) }}
+        <div class="text-2xl font-bold" :class="monthTotals.net >= 0 ? 'text-green-600' : 'text-red-600'">
+          {{ monthTotals.net >= 0 ? '+' : '' }}{{ formatCurrency(Math.abs(monthTotals.net)) }}
         </div>
         <div class="text-xs text-gray-400">Revenus - Dépenses</div>
       </UCard>

@@ -127,6 +127,103 @@
         </UCard>
       </div>
 
+      <!-- Évolution du solde net -->
+      <UCard class="mb-6">
+        <template #header>
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <UIcon name="i-heroicons-chart-bar" class="h-4 w-4 text-blue-500" />
+            Évolution du solde net
+          </h2>
+        </template>
+        <div v-if="balanceSeries.length === 0" class="py-8 text-center text-gray-400 text-sm">Aucune donnée</div>
+        <div v-else class="relative" style="height: 160px;">
+          <svg width="100%" height="160" viewBox="0 0 1000 160" preserveAspectRatio="none" class="overflow-visible">
+            <defs>
+              <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <g>
+              <!-- Ligne zéro -->
+              <line :x1="30" :x2="970" :y1="zeroY()" :y2="zeroY()" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="6,4" />
+              <!-- Aire sous la courbe -->
+              <path :d="areaPath()" fill="url(#balanceGrad)" />
+              <!-- Courbe -->
+              <polyline :points="linePoints()" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+              <!-- Point final -->
+              <circle
+                v-if="balanceSeries.length"
+                :cx="xVB(balanceSeries[balanceSeries.length - 1].day)"
+                :cy="yPx(balanceSeries[balanceSeries.length - 1].value)"
+                r="5"
+                :fill="balanceSeries[balanceSeries.length - 1].value >= 0 ? '#3b82f6' : '#ef4444'"
+                stroke="white" stroke-width="2.5"
+              />
+            </g>
+          </svg>
+          <!-- Labels en overlay HTML (évite la distortion du viewBox) -->
+          <div class="absolute inset-0 pointer-events-none flex flex-col justify-between text-xs text-gray-400 py-1 pl-1">
+            <span>{{ formatShort(seriesMax) }}</span>
+            <span>{{ formatShort(seriesMin) }}</span>
+          </div>
+          <div
+            class="absolute right-2 text-xs font-semibold pointer-events-none"
+            :style="{ top: (yPx(balanceSeries[balanceSeries.length - 1].value) / 160 * 100) + '%', transform: 'translateY(-150%)' }"
+            :class="balanceSeries[balanceSeries.length - 1].value >= 0 ? 'text-blue-500' : 'text-red-500'"
+          >
+            {{ formatShort(balanceSeries[balanceSeries.length - 1].value) }}
+          </div>
+        </div>
+        <!-- Axe des dates -->
+        <div class="relative mt-1 text-xs text-gray-400">
+          <span class="absolute left-0">1</span>
+          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth / 4)) + '%' }">{{ Math.ceil(daysInMonth / 4) }}</span>
+          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth / 2)) + '%' }">{{ Math.ceil(daysInMonth / 2) }}</span>
+          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth * 3 / 4)) + '%' }">{{ Math.ceil(daysInMonth * 3 / 4) }}</span>
+          <span class="absolute right-0">{{ daysInMonth }}</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-4 text-center">Flux net cumulatif sur le mois (revenus − dépenses)</p>
+      </UCard>
+
+      <!-- État des budgets -->
+      <UCard v-if="budgetData.length > 0" class="mb-6">
+        <template #header>
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <UIcon name="i-heroicons-chart-bar-square" class="h-4 w-4 text-purple-500" />
+            État des budgets
+          </h2>
+        </template>
+        <div class="space-y-3">
+          <div v-for="(b, i) in budgetData" :key="i" class="space-y-1">
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 truncate max-w-[55%]">
+                <UIcon
+                  :name="b.is_over ? 'i-heroicons-exclamation-circle' : 'i-heroicons-check-circle'"
+                  :class="b.is_over ? 'text-red-500' : 'text-green-500'"
+                  class="h-4 w-4 flex-shrink-0"
+                />
+                {{ b.category_name }}
+                <UBadge v-if="b.unbudgeted" color="gray" variant="subtle" size="xs">hors budget</UBadge>
+              </span>
+              <span class="text-gray-600 dark:text-gray-400 text-right">
+                <span :class="b.is_over ? 'text-red-600 font-semibold' : 'text-gray-700 dark:text-gray-300'">
+                  {{ formatAmount(b.reel) }}
+                </span>
+                <span v-if="b.prevu > 0" class="text-gray-400"> / {{ formatAmount(b.prevu) }}</span>
+              </span>
+            </div>
+            <div v-if="b.prevu > 0" class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+              <div
+                class="h-1.5 rounded-full transition-all"
+                :class="b.is_over ? 'bg-red-500' : (b.reel / b.prevu > 0.8 ? 'bg-orange-400' : 'bg-green-500')"
+                :style="{ width: Math.min(100, b.prevu > 0 ? (b.reel / b.prevu * 100) : 0) + '%' }"
+              />
+            </div>
+          </div>
+        </div>
+      </UCard>
+
       <!-- Top dépenses par catégorie -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <UCard>
@@ -191,7 +288,8 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
 
-const { getStatistics, getByCategory } = useTransactions()
+const { getStatistics, getByCategory, getTransactions } = useTransactions()
+const { getDashboardData } = useBudgets()
 const { currency, ensureProfileLoaded } = useUserProfile()
 
 // État du sélecteur
@@ -206,6 +304,28 @@ const stats = ref<{ income: { total: number; count: number }; expense: { total: 
 const prevStats = ref<{ income: { total: number; count: number }; expense: { total: number; count: number }; net: number } | null>(null)
 const topExpenses = ref<Array<{ category_id: number; category_name: string; total: number }>>([])
 const topIncomes = ref<Array<{ category_id: number; category_name: string; total: number }>>([])
+const budgetData = ref<Array<{ category_name: string; prevu: number; reel: number; ecart: number; is_over: boolean; unbudgeted: boolean; is_mandatory_savings?: boolean }>>([])
+const monthTransactions = ref<Array<{ date: string; type: string; amount: string }>>([])
+
+// Évolution du solde
+const balanceSeries = computed(() => {
+  const days = daysInMonth.value
+  const dailyNet: Record<string, number> = {}
+  for (const t of monthTransactions.value) {
+    if (t.type === 'transfer') continue
+    const day = t.date.slice(0, 10)
+    const amount = parseFloat(t.amount)
+    dailyNet[day] = (dailyNet[day] || 0) + (t.type === 'income' ? amount : -amount)
+  }
+  const points: { day: number; value: number }[] = []
+  let cumul = 0
+  for (let d = 1; d <= days; d++) {
+    const key = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    cumul += dailyNet[key] || 0
+    points.push({ day: d, value: cumul })
+  }
+  return points
+})
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -252,6 +372,42 @@ const formatAmount = (val: number) => {
   return `${val.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency.value}`
 }
 
+const formatShort = (val: number) => {
+  const abs = Math.abs(val)
+  const sign = val < 0 ? '-' : ''
+  if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}k`
+  return `${sign}${Math.round(abs)}`
+}
+
+// SVG chart helpers
+const CHART_H = 140
+const CHART_PAD_TOP = 10
+const CHART_PAD_BOT = 10
+const seriesMin = computed(() => Math.min(0, ...balanceSeries.value.map(p => p.value)))
+const seriesMax = computed(() => Math.max(0, ...balanceSeries.value.map(p => p.value)))
+const seriesRange = computed(() => seriesMax.value - seriesMin.value || 1)
+
+const xPct = (day: number) => {
+  const total = daysInMonth.value
+  return 3 + ((day - 1) / (total - 1 || 1)) * 94
+}
+const xVB = (day: number) => xPct(day) * 10
+const yPx = (value: number) => {
+  const ratio = (seriesMax.value - value) / seriesRange.value
+  return CHART_PAD_TOP + ratio * (CHART_H - CHART_PAD_TOP - CHART_PAD_BOT)
+}
+const zeroY = () => yPx(0)
+const linePoints = () => balanceSeries.value.map(p => `${xVB(p.day)},${yPx(p.value)}`).join(' ')
+const areaPath = () => {
+  if (!balanceSeries.value.length) return ''
+  const pts = balanceSeries.value
+  const first = pts[0]
+  const last = pts[pts.length - 1]
+  const z = zeroY()
+  const line = pts.map(p => `${xVB(p.day)},${yPx(p.value)}`).join(' L ')
+  return `M ${xVB(first.day)},${z} L ${line} L ${xVB(last.day)},${z} Z`
+}
+
 const dateRange = (year: number, month: number) => {
   const start = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(year, month, 0).getDate()
@@ -269,11 +425,13 @@ const loadData = async () => {
   const prevDate = new Date(selectedYear.value, selectedMonth.value - 2, 1)
   const prevRange = dateRange(prevDate.getFullYear(), prevDate.getMonth() + 1)
 
-  const [statsRes, prevStatsRes, expCatRes, incCatRes] = await Promise.all([
+  const [statsRes, prevStatsRes, expCatRes, incCatRes, budgetRes, txRes] = await Promise.all([
     getStatistics({ start_date: start, end_date: end }),
     getStatistics({ start_date: prevRange.start, end_date: prevRange.end }),
     getByCategory({ type: 'expense', start_date: start, end_date: end }),
     getByCategory({ type: 'income', start_date: start, end_date: end }),
+    getDashboardData({ year: selectedYear.value, month: selectedMonth.value }),
+    getTransactions({ start_date: start, end_date: end, ordering: 'date', page_size: 500 }),
   ])
 
   if (!statsRes.success) {
@@ -286,6 +444,8 @@ const loadData = async () => {
   prevStats.value = prevStatsRes.success ? prevStatsRes.data : null
   topExpenses.value = (expCatRes.data ?? []).slice(0, 5).sort((a, b) => b.total - a.total)
   topIncomes.value = (incCatRes.data ?? []).slice(0, 5).sort((a, b) => b.total - a.total)
+  budgetData.value = budgetRes.success ? (budgetRes.data?.categories ?? []) : []
+  monthTransactions.value = txRes.data?.results ?? []
 
   loading.value = false
 }

@@ -118,7 +118,7 @@
               <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(savings) }}
               </p>
-              <UTooltip v-if="futureSavings !== 0" text="Économies projetées incluant vos transactions futures planifiées ce mois">
+              <UTooltip v-if="futureSavings !== 0" text="Économies projetées incluant vos transactions futures et virements d'épargne planifiés ce mois">
                 <p :class="[
                   'text-sm font-medium cursor-help',
                   (savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -573,6 +573,8 @@ const monthlyExpenses = ref(0);
 const savings = ref(0);
 const futureIncome = ref(0);
 const futureExpenses = ref(0);
+const futureTransfers = ref(0);
+const monthlyTransfers = ref(0);
 const recentTransactions = ref<Transaction[]>([]);
 const showTransactionModal = ref(false);
 const loading = ref(false);
@@ -618,9 +620,9 @@ const filteredCategories = computed(() => {
   });
 });
 
-// Calculate future savings (future income - future expenses)
+// Calculate future savings (future income - future expenses - future transfers)
 const futureSavings = computed(() => {
-  return futureIncome.value - futureExpenses.value;
+  return futureIncome.value - futureExpenses.value - futureTransfers.value;
 });
 
 // Month navigation
@@ -675,9 +677,11 @@ const fetchMonthData = async () => {
   if (statsResponse.success && statsResponse.data) {
     monthlyIncome.value = statsResponse.data.income.total;
     monthlyExpenses.value = statsResponse.data.expense.total;
-    savings.value = statsResponse.data.net;
+    monthlyTransfers.value = statsResponse.data.transfer.total || 0;
+    savings.value = statsResponse.data.net - monthlyTransfers.value;
     futureIncome.value = statsResponse.data.income.future || 0;
     futureExpenses.value = statsResponse.data.expense.future || 0;
+    futureTransfers.value = statsResponse.data.transfer.future || 0;
   }
 
   const budgetDashResult = await getBudgetDashboardData({ year: selectedYear.value, month: selectedMonth.value });
