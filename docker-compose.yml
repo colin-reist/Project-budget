@@ -56,27 +56,22 @@ services:
 
   # Frontend Nuxt.js
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
+    image: node:20-alpine
     container_name: budget_frontend
     restart: unless-stopped
+    working_dir: /app
     environment:
       - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
       - NODE_ENV=production
-#    volumes:
-#      - ./frontend:/app
-#      - /app/node_modules
-#      - /app/.nuxt
+    volumes:
+      - ./frontend/.output:/app/.output:ro
     ports:
       - "3000:3000"
     depends_on:
       - backend
     networks:
       - budget_network
-#    command: node .output/server/index.mjs
+    command: node .output/server/index.mjs
 
   # Nginx (reverse proxy - optionnel, décommenter si nécessaire)
   # nginx:

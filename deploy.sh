@@ -43,7 +43,7 @@ check_requirements() {
     fi
     print_success "Docker trouvé"
 
-    if ! command -v docker-compose &> /dev/null; then
+    if ! command -v docker compose &> /dev/null; then
         print_error "Docker Compose n'est pas installé"
         exit 1
     fi
@@ -65,15 +65,15 @@ deploy_all() {
     git pull origin main
 
     print_warning "Construction des images..."
-    docker-compose build
+    docker compose build
 
     print_warning "Redémarrage des services..."
-    docker-compose up -d
+    docker compose up -d
 
     print_warning "Attente du démarrage..."
     sleep 5
 
-    docker-compose ps
+    docker compose ps
 
     print_success "Déploiement complet terminé!"
 }
@@ -83,11 +83,17 @@ deploy_frontend() {
     print_header "Mise à Jour Frontend"
 
     git pull origin main
-    docker-compose build frontend
-    docker-compose up -d frontend
+
+    print_warning "Build Nuxt en local..."
+    cd frontend
+    NUXT_PUBLIC_API_BASE=$(grep NUXT_PUBLIC_API_BASE ../.env | cut -d '=' -f2) npm run build
+    cd ..
+
+    print_warning "Redémarrage du container..."
+    docker compose restart frontend
 
     sleep 3
-    docker-compose ps frontend
+    docker compose ps frontend
 
     print_success "Frontend mis à jour!"
 }
@@ -97,11 +103,11 @@ deploy_backend() {
     print_header "Mise à Jour Backend"
 
     git pull origin main
-    docker-compose build backend
-    docker-compose up -d backend
+    docker compose build backend
+    docker compose up -d backend
 
     sleep 5
-    docker-compose logs backend | tail -20
+    docker compose logs backend | tail -20
 
     print_success "Backend mis à jour!"
 }
@@ -115,7 +121,7 @@ backup_database() {
     BACKUP_FILE="backups/backup_${TIMESTAMP}.sql"
 
     print_warning "Création de la sauvegarde: $BACKUP_FILE"
-    docker-compose exec -T database pg_dump -U budget_user budget_db > "$BACKUP_FILE"
+    docker compose exec -T database pg_dump -U budget_user budget_db > "$BACKUP_FILE"
 
     print_success "Sauvegarde créée: $BACKUP_FILE"
     ls -lh "$BACKUP_FILE"
@@ -145,7 +151,7 @@ restore_database() {
         exit 0
     fi
 
-    docker-compose exec -T database psql -U budget_user budget_db < "$1"
+    docker compose exec -T database psql -U budget_user budget_db < "$1"
     print_success "Base de données restaurée!"
 }
 
@@ -158,16 +164,16 @@ show_logs() {
 
     case $SERVICE in
         backend)
-            docker-compose logs -f backend
+            docker compose logs -f backend
             ;;
         frontend)
-            docker-compose logs -f frontend
+            docker compose logs -f frontend
             ;;
         database)
-            docker-compose logs -f database
+            docker compose logs -f database
             ;;
         all|*)
-            docker-compose logs -f
+            docker compose logs -f
             ;;
     esac
 }
@@ -175,7 +181,7 @@ show_logs() {
 # Vérification de l'état
 check_status() {
     print_header "État de l'Application"
-    docker-compose ps
+    docker compose ps
 
     echo ""
     print_header "Utilisation des Ressources"
@@ -234,19 +240,19 @@ case "$1" in
         ;;
     start)
         print_header "Démarrage des conteneurs"
-        docker-compose up -d
-        docker-compose ps
+        docker compose up -d
+        docker compose ps
         ;;
     stop)
         print_header "Arrêt des conteneurs"
-        docker-compose down
+        docker compose down
         print_success "Conteneurs arrêtés (données conservées)"
         ;;
     restart)
         print_header "Redémarrage des conteneurs"
-        docker-compose restart
+        docker compose restart
         sleep 3
-        docker-compose ps
+        docker compose ps
         ;;
     help|--help|-h)
         show_help

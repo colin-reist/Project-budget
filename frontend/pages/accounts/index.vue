@@ -1,19 +1,16 @@
 <template>
   <div>
-    <div class="mb-8 flex justify-between items-center">
+    <div class="mb-6 sm:mb-8 flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
           Comptes
         </h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">
+        <p class="mt-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hidden sm:block">
           Gérez vos comptes bancaires et leur solde
         </p>
       </div>
-      <UButton
-        icon="i-heroicons-plus"
-        size="lg"
-        @click="openAddModal"
-      >
+      <UButton icon="i-heroicons-plus" size="lg" class="sm:hidden" aria-label="Nouveau compte" @click="openAddModal" />
+      <UButton icon="i-heroicons-plus" size="lg" class="hidden sm:inline-flex" @click="openAddModal">
         Nouveau compte
       </UButton>
     </div>

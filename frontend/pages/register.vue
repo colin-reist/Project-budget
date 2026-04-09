@@ -17,8 +17,10 @@
           <UFormGroup label="Nom d'utilisateur" name="username" required>
             <UInput
               v-model="registerForm.username"
+              size="lg"
               placeholder="Choisissez un nom d'utilisateur"
               autocomplete="username"
+              inputmode="text"
               :disabled="loading"
             />
           </UFormGroup>
@@ -28,37 +30,43 @@
             <UInput
               v-model="registerForm.email"
               type="email"
+              size="lg"
               placeholder="votre@email.com"
               autocomplete="email"
+              inputmode="email"
               :disabled="loading"
             />
           </UFormGroup>
 
-          <!-- First Name (optional) -->
-          <UFormGroup label="Prénom" name="first_name">
-            <UInput
-              v-model="registerForm.first_name"
-              placeholder="Votre prénom"
-              autocomplete="given-name"
-              :disabled="loading"
-            />
-          </UFormGroup>
+          <!-- First / Last Name on same row on larger screens -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UFormGroup label="Prénom" name="first_name">
+              <UInput
+                v-model="registerForm.first_name"
+                size="lg"
+                placeholder="Votre prénom"
+                autocomplete="given-name"
+                :disabled="loading"
+              />
+            </UFormGroup>
 
-          <!-- Last Name (optional) -->
-          <UFormGroup label="Nom" name="last_name">
-            <UInput
-              v-model="registerForm.last_name"
-              placeholder="Votre nom"
-              autocomplete="family-name"
-              :disabled="loading"
-            />
-          </UFormGroup>
+            <UFormGroup label="Nom" name="last_name">
+              <UInput
+                v-model="registerForm.last_name"
+                size="lg"
+                placeholder="Votre nom"
+                autocomplete="family-name"
+                :disabled="loading"
+              />
+            </UFormGroup>
+          </div>
 
           <!-- Password -->
           <UFormGroup label="Mot de passe" name="password" required>
             <UInput
               v-model="registerForm.password"
               type="password"
+              size="lg"
               placeholder="Créez un mot de passe sécurisé"
               autocomplete="new-password"
               :disabled="loading"
@@ -75,6 +83,7 @@
             <UInput
               v-model="registerForm.confirmPassword"
               type="password"
+              size="lg"
               placeholder="Confirmez votre mot de passe"
               autocomplete="new-password"
               :disabled="loading"

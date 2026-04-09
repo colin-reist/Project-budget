@@ -13,6 +13,8 @@ export const useBudgets = () => {
     category?: number
     is_active?: boolean
     search?: string
+    year?: number
+    month?: number
   }): Promise<{ data: PaginatedResponse<Budget> | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<PaginatedResponse<Budget>>('/api/v1/budgets/', {
@@ -94,7 +96,7 @@ export const useBudgets = () => {
   /**
    * Récupérer le résumé des budgets
    */
-  const getBudgetsSummary = async (): Promise<{
+  const getBudgetsSummary = async (params?: { year?: number; month?: number }): Promise<{
     data: {
       total_budgets: number
       total_amount: number
@@ -108,7 +110,7 @@ export const useBudgets = () => {
     error?: StandardError
   }> => {
     try {
-      const data = await apiFetch('/api/v1/budgets/summary/')
+      const data = await apiFetch('/api/v1/budgets/summary/', { method: 'GET', params })
       return { data, success: true }
     } catch (error) {
       console.error('Error fetching budgets summary:', error)

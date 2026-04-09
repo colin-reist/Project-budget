@@ -14,6 +14,34 @@ const { getAccounts } = useAccounts()
 const { getErrorForField, formatForToast } = useErrorHandler()
 const toast = useToast()
 
+// Navigation par mois
+const selectedMonthDate = ref(new Date())
+const selectedYear = computed(() => selectedMonthDate.value.getFullYear())
+const selectedMonth = computed(() => selectedMonthDate.value.getMonth() + 1)
+const selectedMonthLabel = computed(() =>
+  selectedMonthDate.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+)
+const isCurrentMonth = computed(() => {
+  const now = new Date()
+  return selectedMonthDate.value.getMonth() === now.getMonth() &&
+    selectedMonthDate.value.getFullYear() === now.getFullYear()
+})
+
+const goToPrevMonth = async () => {
+  const d = new Date(selectedMonthDate.value)
+  d.setMonth(d.getMonth() - 1)
+  selectedMonthDate.value = d
+  await Promise.all([fetchBudgets(), fetchSummary()])
+}
+
+const goToNextMonth = async () => {
+  if (isCurrentMonth.value) return
+  const d = new Date(selectedMonthDate.value)
+  d.setMonth(d.getMonth() + 1)
+  selectedMonthDate.value = d
+  await Promise.all([fetchBudgets(), fetchSummary()])
+}
+
 // State
 const budgets = ref<Budget[]>([])
 const categories = ref<Category[]>([])
@@ -57,7 +85,7 @@ const form = ref({
 // Methods
 const fetchBudgets = async () => {
   loading.value = true
-  const result = await getBudgets()
+  const result = await getBudgets({ year: selectedYear.value, month: selectedMonth.value })
   if (result.success && result.data) {
     budgets.value = result.data.results
   }
@@ -72,7 +100,7 @@ const fetchCategories = async () => {
 }
 
 const fetchSummary = async () => {
-  const result = await getBudgetsSummary()
+  const result = await getBudgetsSummary({ year: selectedYear.value, month: selectedMonth.value })
   if (result.success && result.data) {
     summary.value = result.data
   }
@@ -241,24 +269,28 @@ const viewBudgetTransactions = async (budget: Budget) => {
   loading.value = true
 
   try {
-    // Calculer la période du budget
+    // Calculer la période du budget basée sur le mois sélectionné
     const today = new Date()
+    const refYear = selectedYear.value
+    const refMonth = selectedMonth.value - 1 // 0-based pour Date
     let startDate: Date
     let endDate: Date
 
     if (budget.period === 'weekly') {
-      const dayOfWeek = today.getDay()
+      // Pour les hebdomadaires, utiliser la semaine courante du mois sélectionné
+      const refDate = new Date(refYear, refMonth, 1)
+      const dayOfWeek = refDate.getDay()
       const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      startDate = new Date(today)
-      startDate.setDate(today.getDate() - diff)
+      startDate = new Date(refDate)
+      startDate.setDate(refDate.getDate() - diff)
       endDate = new Date(startDate)
       endDate.setDate(startDate.getDate() + 6)
     } else if (budget.period === 'monthly') {
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1)
-      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      startDate = new Date(refYear, refMonth, 1)
+      endDate = new Date(refYear, refMonth + 1, 0)
     } else { // yearly
-      startDate = new Date(today.getFullYear(), 0, 1)
-      endDate = new Date(today.getFullYear(), 11, 31)
+      startDate = new Date(refYear, 0, 1)
+      endDate = new Date(refYear, 11, 31)
     }
 
     // Limiter par les dates du budget si définies
@@ -269,7 +301,7 @@ const viewBudgetTransactions = async (budget: Budget) => {
       endDate = new Date(budget.end_date)
     }
 
-    // Ne pas inclure les dates futures
+    // Ne cap à aujourd'hui que si on est sur le mois courant ou futur
     if (endDate > today) {
       endDate = today
     }
@@ -413,11 +445,37 @@ onMounted(async () => {
 
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Budgets</h1>
-      <UButton @click="openModal()" icon="i-heroicons-plus" size="lg">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl sm:text-3xl font-bold">Budgets</h1>
+      <UButton @click="openModal()" icon="i-heroicons-plus" size="lg" class="hidden sm:inline-flex">
         Nouveau budget
       </UButton>
+      <UButton @click="openModal()" icon="i-heroicons-plus" size="lg" class="sm:hidden" />
+    </div>
+
+    <!-- Navigation par mois -->
+    <div class="flex items-center gap-2 mb-6">
+      <UButton
+        icon="i-heroicons-chevron-left"
+        variant="ghost"
+        size="sm"
+        @click="goToPrevMonth"
+        aria-label="Mois précédent"
+      />
+      <span class="text-base sm:text-lg font-semibold capitalize min-w-[150px] sm:min-w-[180px] text-center">
+        {{ selectedMonthLabel }}
+      </span>
+      <UButton
+        icon="i-heroicons-chevron-right"
+        variant="ghost"
+        size="sm"
+        @click="goToNextMonth"
+        :disabled="isCurrentMonth"
+        aria-label="Mois suivant"
+      />
+      <UBadge v-if="!isCurrentMonth" color="orange" variant="subtle" class="ml-1">
+        Historique
+      </UBadge>
     </div>
 
     <!-- Available Budget Info -->

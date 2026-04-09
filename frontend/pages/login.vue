@@ -38,8 +38,10 @@
           <UFormGroup label="Nom d'utilisateur" name="username" required>
             <UInput
               v-model="loginForm.username"
+              size="lg"
               placeholder="Entrez votre nom d'utilisateur"
               autocomplete="username"
+              inputmode="text"
             />
           </UFormGroup>
 
@@ -47,14 +49,19 @@
             <UInput
               v-model="loginForm.password"
               type="password"
+              size="lg"
               placeholder="Entrez votre mot de passe"
               autocomplete="current-password"
             />
           </UFormGroup>
 
-          <div v-if="error" class="text-sm text-red-600 dark:text-red-400">
-            {{ error }}
-          </div>
+          <UAlert
+            v-if="error"
+            color="red"
+            variant="soft"
+            icon="i-heroicons-exclamation-triangle"
+            :title="error"
+          />
 
           <UButton
             type="submit"

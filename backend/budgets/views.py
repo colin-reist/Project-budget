@@ -38,6 +38,21 @@ class BudgetViewSet(viewsets.ModelViewSet):
             return BudgetListSerializer
         return BudgetSerializer
 
+    def get_serializer_context(self):
+        """
+        Ajoute year/month au contexte pour permettre le calcul historique des dépenses.
+        """
+        context = super().get_serializer_context()
+        today = date.today()
+        try:
+            year = int(self.request.query_params.get('year', today.year))
+            month = int(self.request.query_params.get('month', today.month))
+        except (ValueError, TypeError):
+            year, month = today.year, today.month
+        context['year'] = year
+        context['month'] = month
+        return context
+
     def perform_create(self, serializer):
         """
         Associe automatiquement l'utilisateur connecté au budget
@@ -47,15 +62,31 @@ class BudgetViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def summary(self, request):
         """
-        Retourne un résumé des budgets actifs
+        Retourne un résumé des budgets actifs pour le mois sélectionné.
         """
-        budgets = self.get_queryset().filter(is_active=True)
+        today = date.today()
+        try:
+            year = int(request.query_params.get('year', today.year))
+            month = int(request.query_params.get('month', today.month))
+        except (ValueError, TypeError):
+            year, month = today.year, today.month
 
-        total_budgets = budgets.count()
-        total_amount = sum(float(b.amount) for b in budgets)
-        total_spent = sum(float(b.get_spent_amount()) for b in budgets)
-        over_budget_count = sum(1 for b in budgets if b.is_over_budget())
-        alert_count = sum(1 for b in budgets if b.is_alert_triggered() and not b.is_over_budget())
+        budgets = list(self.get_queryset().filter(is_active=True))
+
+        total_budgets = len(budgets)
+        total_amount = Decimal('0.00')
+        total_spent = Decimal('0.00')
+        over_budget_count = 0
+        alert_count = 0
+
+        for b in budgets:
+            spent = b.get_spent_amount_for_period(year, month)
+            total_amount += b.amount
+            total_spent += spent
+            if spent > b.amount:
+                over_budget_count += 1
+            elif b.amount > 0 and float(spent / b.amount * 100) >= b.alert_threshold:
+                alert_count += 1
 
         return Response({
             'total_budgets': total_budgets,
@@ -114,8 +145,30 @@ class BudgetViewSet(viewsets.ModelViewSet):
         total_budget = Decimal('0.00')
         total_actual = Decimal('0.00')
 
+        from accounts.models import Account as BudgetAccount
+        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
+
         for budget in budgets:
-            spent = budget.get_spent_amount()
+            # Calculer le montant dépensé pour le mois sélectionné (pas le mois courant)
+            if budget.is_savings_goal or budget.is_mandatory_savings:
+                savings_accounts = BudgetAccount.objects.filter(
+                    user=user, account_type='savings', is_active=True
+                )
+                spent = (
+                    Transaction.objects.filter(
+                        user=user, type='transfer',
+                        destination_account__in=savings_accounts,
+                        date__gte=start, date__lte=cap
+                    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+                )
+            else:
+                spent = (
+                    Transaction.objects.filter(
+                        user=user, category=budget.category,
+                        type='expense', date__gte=start, date__lte=cap
+                    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+                )
+
             total_budget += budget.amount
             total_actual += spent
 
@@ -150,7 +203,6 @@ class BudgetViewSet(viewsets.ModelViewSet):
                 })
 
         # Catégories avec dépenses mais sans budget
-        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
         unbudgeted = (
             Transaction.objects.filter(
                 user=user, type='expense',

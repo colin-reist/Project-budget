@@ -217,6 +217,7 @@
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth();
 const { registerShortcut } = useKeyboardShortcuts();
+const { generateRecurring } = useTransactions();
 useSessionTimeout();
 
 // Mobile menu
@@ -323,7 +324,10 @@ const userMenuItems = [
 ];
 
 // Register global keyboard shortcuts
-onMounted(() => {
+onMounted(async () => {
+  // Generate missing recurring transactions
+  await generateRecurring();
+
   // ? key to open shortcuts help
   registerShortcut('?', () => {
     showShortcutsHelp.value = true;

@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Count
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
 from .models import Transaction
 from .serializers import TransactionSerializer, TransactionListSerializer
 
@@ -22,10 +23,18 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Retourne uniquement les transactions de l'utilisateur connecté
+        Supporte les filtres start_date / end_date en query params
         """
-        return Transaction.objects.filter(user=self.request.user).select_related(
+        queryset = Transaction.objects.filter(user=self.request.user).select_related(
             'account', 'category', 'destination_account'
         )
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date__lte=end_date)
+        return queryset
 
     def get_serializer_class(self):
         """
@@ -72,6 +81,72 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 new_source = 'web'
 
         serializer.save(source=new_source)
+
+    @action(detail=False, methods=['post'])
+    def generate_recurring(self, request):
+        """
+        Génère les occurrences manquantes des transactions récurrentes jusqu'à aujourd'hui.
+        """
+        today = date.today()
+        created_count = 0
+
+        recurring = self.get_queryset().filter(
+            is_recurring=True,
+            recurrence_frequency__isnull=False
+        )
+
+        freq_map = {
+            'daily': lambda d, i: d + timedelta(days=i),
+            'weekly': lambda d, i: d + timedelta(weeks=i),
+            'monthly': lambda d, i: d + relativedelta(months=i),
+            'yearly': lambda d, i: d + relativedelta(years=i),
+        }
+
+        for transaction in recurring:
+            freq = transaction.recurrence_frequency
+            interval = transaction.recurrence_interval or 1
+            advance = freq_map.get(freq)
+            if not advance:
+                continue
+
+            end = transaction.recurrence_end_date if transaction.recurrence_end_date else date.today() + timedelta(days=365)
+            current = transaction.date
+
+            # Boucle de la date de base jusqu'à la fin de la récurrence
+            while current <= end:
+                # Ne pas créer une occurrence pour la date de base si c'est la transaction de base elle-même
+                if current > transaction.date:
+                    exists = Transaction.objects.filter(
+                        user=request.user,
+                        description=transaction.description,
+                        account=transaction.account,
+                        amount=transaction.amount,
+                        type=transaction.type,
+                        date=current
+                    ).exists()
+
+                    if not exists:
+                        Transaction.objects.create(
+                            user=request.user,
+                            account=transaction.account,
+                            category=transaction.category,
+                            destination_account=transaction.destination_account,
+                            type=transaction.type,
+                            amount=transaction.amount,
+                            description=transaction.description,
+                            date=current,
+                            notes=transaction.notes,
+                            is_recurring=True,
+                            recurrence_frequency=transaction.recurrence_frequency,
+                            recurrence_interval=transaction.recurrence_interval,
+                            recurrence_end_date=transaction.recurrence_end_date,
+                            source='web',
+                        )
+                        created_count += 1
+
+                current = advance(current, interval)
+
+        return Response({'created': created_count})
 
     @action(detail=False, methods=['get'])
     def statistics(self, request):

@@ -119,28 +119,75 @@ class BudgetListSerializer(serializers.ModelSerializer):
             'is_projected_over_budget', 'created_at'
         ]
 
+    def _get_period_spent(self, obj):
+        """Retourne le montant dépensé pour le mois du contexte (ou mois courant)."""
+        year = self.context.get('year')
+        month = self.context.get('month')
+        if year and month:
+            return obj.get_spent_amount_for_period(year, month)
+        return obj.get_spent_amount()
+
     def get_spent_amount(self, obj):
-        return float(obj.get_spent_amount())
+        return float(self._get_period_spent(obj))
 
     def get_remaining_amount(self, obj):
-        return float(obj.get_remaining_amount())
+        spent = self._get_period_spent(obj)
+        return float(obj.amount - spent)
 
     def get_percentage_used(self, obj):
-        return round(obj.get_percentage_used(), 2)
+        if obj.amount == 0:
+            return 0
+        spent = self._get_period_spent(obj)
+        return round(float((spent / obj.amount) * 100), 2)
 
     def get_is_over_budget(self, obj):
-        return obj.is_over_budget()
+        spent = self._get_period_spent(obj)
+        return spent > obj.amount
 
     def get_projected_amount(self, obj):
+        year = self.context.get('year')
+        month = self.context.get('month')
+        if year and month:
+            from datetime import date
+            today = date.today()
+            # Mois passé : projeté = dépensé (tout s'est déjà passé)
+            if (year, month) < (today.year, today.month):
+                return float(obj.get_spent_amount_for_period(year, month))
         return float(obj.get_projected_amount())
 
     def get_projected_remaining_amount(self, obj):
+        year = self.context.get('year')
+        month = self.context.get('month')
+        if year and month:
+            from datetime import date
+            today = date.today()
+            if (year, month) < (today.year, today.month):
+                spent = obj.get_spent_amount_for_period(year, month)
+                return float(obj.amount - spent)
         return float(obj.get_projected_remaining_amount())
 
     def get_projected_percentage_used(self, obj):
+        year = self.context.get('year')
+        month = self.context.get('month')
+        if year and month:
+            from datetime import date
+            today = date.today()
+            if (year, month) < (today.year, today.month):
+                if obj.amount == 0:
+                    return 0
+                spent = obj.get_spent_amount_for_period(year, month)
+                return round(float((spent / obj.amount) * 100), 2)
         return round(obj.get_projected_percentage_used(), 2)
 
     def get_is_projected_over_budget(self, obj):
+        year = self.context.get('year')
+        month = self.context.get('month')
+        if year and month:
+            from datetime import date
+            today = date.today()
+            if (year, month) < (today.year, today.month):
+                spent = obj.get_spent_amount_for_period(year, month)
+                return spent > obj.amount
         return obj.is_projected_over_budget()
 
 

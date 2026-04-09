@@ -1,3 +1,5 @@
+import calendar
+
 from django.db import models
 from django.conf import settings
 from decimal import Decimal
@@ -151,6 +153,55 @@ class Budget(models.Model):
             logger.debug(f"   Dépenses trouvées: {expenses.count()}")
             total = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
             logger.debug(f"   💸 Total dépensé: {total} CHF")
+
+        return total
+
+    def get_spent_amount_for_period(self, year, month):
+        """
+        Calcule le montant dépensé pour ce budget sur un mois précis.
+        Pour les mois passés, retourne le total complet du mois.
+        Pour le mois en cours ou futur, cap à aujourd'hui.
+        """
+        from transactions.models import Transaction
+        from accounts.models import Account
+        from datetime import date
+
+        today = date.today()
+
+        start = date(year, month, 1)
+        last_day = calendar.monthrange(year, month)[1]
+        end = date(year, month, last_day)
+
+        # Filtrer par les dates du budget si définies
+        if self.start_date and start < self.start_date:
+            start = self.start_date
+        if self.end_date and end > self.end_date:
+            end = self.end_date
+
+        # Cap à aujourd'hui pour le mois courant ou futur
+        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
+
+        if self.is_savings_goal:
+            savings_accounts = Account.objects.filter(
+                user=self.user,
+                account_type='savings',
+                is_active=True
+            )
+            total = Transaction.objects.filter(
+                user=self.user,
+                type='transfer',
+                destination_account__in=savings_accounts,
+                date__gte=start,
+                date__lte=cap
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+        else:
+            total = Transaction.objects.filter(
+                user=self.user,
+                category=self.category,
+                type='expense',
+                date__gte=start,
+                date__lte=cap
+            ).exclude(type='adjustment').aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
 
         return total
 

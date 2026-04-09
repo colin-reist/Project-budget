@@ -13,10 +13,13 @@ export const useTransactions = () => {
     account?: number
     category?: number
     date?: string
+    start_date?: string
+    end_date?: string
     is_recurring?: boolean
     search?: string
     ordering?: string
     page?: number
+    page_size?: number
   }): Promise<{ data: PaginatedResponse<Transaction> | null; success: boolean; error?: StandardError }> => {
     try {
       const data = await apiFetch<PaginatedResponse<Transaction>>('/api/v1/transactions/', {
@@ -181,6 +184,17 @@ export const useTransactions = () => {
     }
   }
 
+  const generateRecurring = async (): Promise<{ created: number }> => {
+    try {
+      const data = await apiFetch<{ created: number }>('/api/v1/transactions/generate_recurring/', {
+        method: 'POST'
+      })
+      return data
+    } catch {
+      return { created: 0 }
+    }
+  }
+
   return {
     getTransactions,
     getTransaction,
@@ -189,6 +203,7 @@ export const useTransactions = () => {
     deleteTransaction,
     getStatistics,
     getByCategory,
-    getMonthlySummary
+    getMonthlySummary,
+    generateRecurring
   }
 }
