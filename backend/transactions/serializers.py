@@ -36,13 +36,19 @@ class TransactionSerializer(serializers.ModelSerializer):
             'recurrence_frequency',
             'recurrence_interval',
             'recurrence_end_date',
+            'recurring_series_id',
+            'is_series_template',
             'source',
             'source_display',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'type_display', 'source_display',
-                           'source', 'account_details', 'category_details', 'destination_account_details']
+        read_only_fields = [
+            'id', 'created_at', 'updated_at', 'type_display', 'source_display',
+            'source', 'account_details', 'category_details', 'destination_account_details',
+            # Ces champs sont gérés automatiquement par la logique de génération
+            'recurring_series_id', 'is_series_template',
+        ]
 
     def validate(self, data):
         """
@@ -106,5 +112,7 @@ class TransactionListSerializer(serializers.ModelSerializer):
             'description',
             'date',
             'is_recurring',
+            'recurring_series_id',
+            'is_series_template',
             'source',
         ]

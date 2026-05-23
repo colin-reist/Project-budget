@@ -7,6 +7,7 @@ definePageMeta({
 })
 
 const { getTransactions, createTransaction, updateTransaction, deleteTransaction, getStatistics, generateRecurring } = useTransactions()
+const { updateSeries } = useRecurring()
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
 const { getErrorForField, formatForToast } = useErrorHandler()
@@ -213,6 +214,7 @@ const closeModal = () => {
   showModal.value = false
   editingTransaction.value = null
   formErrors.value = null
+  editingAsSeries.value = false
 }
 
 const handleSubmit = async () => {
@@ -249,7 +251,21 @@ const handleSubmit = async () => {
   }
 
   let result
-  if (editingTransaction.value) {
+  if (editingTransaction.value && editingAsSeries.value) {
+    // Modification de toute la série : appel à update_series à partir de la date de cette occurrence
+    result = await updateSeries(
+      editingTransaction.value.id,
+      {
+        amount: transactionData.amount?.toString(),
+        description: transactionData.description,
+        category: transactionData.category ?? null,
+        notes: transactionData.notes ?? null,
+        recurrence_end_date: transactionData.recurrence_end_date ?? null,
+        account: transactionData.account,
+      },
+      editingTransaction.value.date
+    )
+  } else if (editingTransaction.value) {
     result = await updateTransaction(editingTransaction.value.id, transactionData)
   } else {
     result = await createTransaction(transactionData)
@@ -279,6 +295,50 @@ const handleSubmit = async () => {
     })
   }
 }
+
+// Recurring edit choice modal state
+// Lorsque l'utilisateur clique "Modifier" sur une transaction d'une série,
+// on affiche ce modal pour demander s'il veut modifier cette occurrence ou toute la série.
+const showRecurringChoice = ref(false)
+const pendingEditTransaction = ref<Transaction | null>(null)
+
+/**
+ * Intercepte le clic "Modifier" sur une transaction.
+ * Si la transaction appartient à une série (recurring_series_id non null),
+ * affiche d'abord le modal de choix ; sinon ouvre directement le modal d'édition.
+ */
+const handleEditClick = (transaction: Transaction) => {
+  if (transaction.recurring_series_id && !transaction.is_series_template) {
+    // Instance d'une série : demander à l'utilisateur son intention
+    pendingEditTransaction.value = transaction
+    showRecurringChoice.value = true
+  } else {
+    // Transaction normale ou template : édition directe
+    openModal(transaction)
+  }
+}
+
+/** L'utilisateur a choisi de ne modifier que cette occurrence */
+const onEditSingleOccurrence = () => {
+  if (pendingEditTransaction.value) {
+    openModal(pendingEditTransaction.value)
+    pendingEditTransaction.value = null
+  }
+}
+
+/** L'utilisateur a choisi de modifier toute la série (instances futures) */
+const onEditSeries = () => {
+  if (pendingEditTransaction.value) {
+    // On ouvre le modal d'édition, mais handleSubmit devra appeler update_series
+    // On stocke le contexte pour que handleSubmit sache qu'il s'agit d'une édition de série
+    editingAsSeries.value = true
+    openModal(pendingEditTransaction.value)
+    pendingEditTransaction.value = null
+  }
+}
+
+/** Indique que le prochain submit doit appeler update_series plutôt que PATCH individuel */
+const editingAsSeries = ref(false)
 
 // Confirm modal state
 const showConfirmDelete = ref(false)
@@ -518,7 +578,7 @@ onMounted(async () => {
               variant="ghost"
               class="min-h-[40px] min-w-[40px]"
               aria-label="Modifier la transaction"
-              @click="openModal(transaction)"
+              @click="handleEditClick(transaction)"
             />
             <UButton
               icon="i-heroicons-trash"
@@ -533,6 +593,13 @@ onMounted(async () => {
         </div>
       </div>
     </UCard>
+
+    <!-- Recurring Edit Choice Modal -->
+    <RecurringEditChoiceModal
+      v-model="showRecurringChoice"
+      @edit-single="onEditSingleOccurrence"
+      @edit-series="onEditSeries"
+    />
 
     <!-- Confirm Delete Modal -->
     <ConfirmModal

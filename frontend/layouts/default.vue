@@ -189,6 +189,11 @@
       <slot />
     </main>
 
+    <!-- Footer - Desktop only -->
+    <div v-if="isAuthenticated" class="hidden sm:block">
+      <AppFooter />
+    </div>
+
     <!-- Bottom Navigation (Mobile only) - Improved touch targets -->
     <nav v-if="isAuthenticated" class="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40 safe-area-bottom">
       <div class="grid grid-cols-5 h-20">
@@ -236,6 +241,7 @@ const navLinks = [
   { to: '/tools/annual-wrap', label: 'Bilan Annuel', icon: 'i-heroicons-chart-bar-square' },
   { to: '/categories', label: 'Catégories', icon: 'i-heroicons-tag' },
   { to: '/budgets', label: 'Budgets', icon: 'i-heroicons-chart-bar' },
+  { to: '/recurring', label: 'Récurrents', icon: 'i-heroicons-arrow-path' },
 ];
 
 // Bottom navigation links for mobile (main actions only)
@@ -275,6 +281,11 @@ const configMenuItems = [
       label: 'Budgets',
       icon: 'i-heroicons-chart-bar',
       click: () => navigateTo('/budgets'),
+    },
+    {
+      label: 'Récurrents',
+      icon: 'i-heroicons-arrow-path',
+      click: () => navigateTo('/recurring'),
     },
   ],
 ];

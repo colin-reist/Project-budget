@@ -13,6 +13,8 @@ export default defineNuxtConfig({
     public: {
       // Public keys that are exposed to the client
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000',
+      appVersion: '1.0.0',
+      buildDate: new Date().toISOString(),
     }
   },
 

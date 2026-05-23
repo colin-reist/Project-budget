@@ -1,4 +1,4 @@
-import { ref, watch, onUnmounted } from 'vue';
+import { watch, onUnmounted } from 'vue';
 
 const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 const WARNING_DURATION = 60; // seconds
@@ -12,6 +12,7 @@ export const useSessionTimeout = () => {
   let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
   let countdownTimer: ReturnType<typeof setInterval> | null = null;
   let tokenRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  let hiddenAt: number | null = null;
 
   const clearTimers = () => {
     if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
@@ -67,6 +68,35 @@ export const useSessionTimeout = () => {
     }, 10 * 60 * 1000);
   };
 
+  const handleVisibilityChange = async () => {
+    if (!isAuthenticated.value) return;
+
+    if (document.hidden) {
+      // Tab goes to background: record time
+      hiddenAt = Date.now();
+    } else {
+      // Tab comes back to foreground
+      if (hiddenAt === null) return;
+      const elapsed = Date.now() - hiddenAt;
+      hiddenAt = null;
+
+      if (elapsed >= INACTIVITY_TIMEOUT) {
+        // User was away too long: show warning instead of silent logout
+        clearTimers();
+        startCountdown();
+      } else {
+        // Was away less than 10 min: refresh token proactively to avoid silent 401
+        try {
+          await refreshAccessToken();
+        } catch {
+          // refresh failed, forceLogout will be called by refreshAccessToken internally
+          return;
+        }
+        resetInactivityTimer();
+      }
+    }
+  };
+
   const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
 
   const handleActivity = () => resetInactivityTimer();
@@ -74,6 +104,7 @@ export const useSessionTimeout = () => {
   const start = () => {
     if (!import.meta.client) return;
     ACTIVITY_EVENTS.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     resetInactivityTimer();
     startTokenRefresh();
   };
@@ -81,8 +112,10 @@ export const useSessionTimeout = () => {
   const stop = () => {
     if (!import.meta.client) return;
     ACTIVITY_EVENTS.forEach(event => window.removeEventListener(event, handleActivity));
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
     clearTimers();
     if (tokenRefreshTimer) { clearInterval(tokenRefreshTimer); tokenRefreshTimer = null; }
+    hiddenAt = null;
   };
 
   // Watch auth state

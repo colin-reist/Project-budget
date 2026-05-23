@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from decimal import Decimal
@@ -106,6 +107,19 @@ class Transaction(models.Model):
         choices=SOURCE_CHOICES,
         default='web',
         verbose_name='Source'
+    )
+    # Série récurrente — lien entre le template et ses instances générées
+    recurring_series_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='ID de série récurrente',
+        help_text='UUID partagé par le template et toutes ses instances générées'
+    )
+    is_series_template = models.BooleanField(
+        default=False,
+        verbose_name='Template de série',
+        help_text='True uniquement pour la transaction maître de la série récurrente'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,

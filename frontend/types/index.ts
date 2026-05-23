@@ -16,6 +16,8 @@ export interface Account {
   account_type: 'checking' | 'savings' | 'credit_card' | 'cash' | 'investment' | 'loan' | 'other';
   account_type_display?: string;
   balance: string;
+  current_balance?: string;
+  projected_balance?: string;
   currency: 'CHF' | 'EUR' | 'USD' | 'GBP';
   description?: string;
   is_active: boolean;
@@ -115,10 +117,35 @@ export interface Transaction {
   recurrence_frequency?: string | null;
   recurrence_interval: number;
   recurrence_end_date?: string | null;
+  /** UUID partagé entre le template et toutes ses instances générées */
+  recurring_series_id?: string | null;
+  /** True uniquement pour la transaction maître de la série */
+  is_series_template?: boolean;
   source?: 'web' | 'ios' | 'ios_uncategorized';
   source_display?: string;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Représentation d'une série récurrente (retournée par GET /recurring_series/)
+ * Contient les métadonnées du template et des statistiques sur ses instances.
+ */
+export interface RecurringSeries {
+  id: number;
+  description: string;
+  amount: string;
+  type: 'income' | 'expense' | 'transfer';
+  recurrence_frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurrence_interval: number;
+  recurrence_end_date: string | null;
+  account: { id: number; name: string; currency: string };
+  category: { id: number; name: string; color: string; icon: string } | null;
+  /** Prochaine date d'occurrence future (ISO), null si toutes les occurrences sont passées */
+  next_occurrence: string | null;
+  /** Nombre d'instances générées (hors template) */
+  total_instances: number;
+  recurring_series_id: string | null;
 }
 
 // Recurrence rule types

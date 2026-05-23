@@ -59,77 +59,34 @@
 
     <!-- Summary Cards -->
     <div v-else class="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-5 sm:mb-8">
-      <UCard>
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-arrow-trending-up" class="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Revenus ce mois
-            </p>
-            <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ formatCurrency(monthlyIncome) }}
-              </p>
-              <UTooltip v-if="futureIncome !== 0" text="Solde projeté incluant vos revenus futurs planifiés ce mois">
-                <p class="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-help">
-                  ({{ formatCurrency(monthlyIncome + futureIncome) }})
-                </p>
-              </UTooltip>
-            </div>
-          </div>
-        </div>
-      </UCard>
-
-      <UCard>
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-arrow-trending-down" class="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Dépenses ce mois
-            </p>
-            <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ formatCurrency(monthlyExpenses) }}
-              </p>
-              <UTooltip v-if="futureExpenses !== 0" text="Montant projeté incluant vos dépenses futures planifiées ce mois">
-                <p class="text-sm text-red-600 dark:text-red-400 font-medium cursor-help">
-                  ({{ formatCurrency(monthlyExpenses + futureExpenses) }})
-                </p>
-              </UTooltip>
-            </div>
-          </div>
-        </div>
-      </UCard>
-
-      <UCard class="col-span-2 sm:col-span-1">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <UIcon name="i-heroicons-chart-bar" class="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Économies
-            </p>
-            <div class="flex flex-wrap items-baseline gap-2">
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ formatCurrency(savings) }}
-              </p>
-              <UTooltip v-if="futureSavings !== 0" text="Économies projetées incluant vos transactions futures et virements d'épargne planifiés ce mois">
-                <p :class="[
-                  'text-sm font-medium cursor-help',
-                  (savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                ]">
-                  ({{ formatCurrency(savings + futureSavings) }})
-                </p>
-              </UTooltip>
-            </div>
-          </div>
-        </div>
-      </UCard>
+      <SummaryCard
+        icon="i-heroicons-arrow-trending-up"
+        icon-color="text-blue-600"
+        label="Revenus ce mois"
+        :amount="monthlyIncome"
+        :future-amount="futureIncome"
+        tooltip-text="Solde projeté incluant vos revenus futurs planifiés ce mois"
+        future-amount-class="text-blue-600 dark:text-blue-400"
+      />
+      <SummaryCard
+        icon="i-heroicons-arrow-trending-down"
+        icon-color="text-red-600"
+        label="Dépenses ce mois"
+        :amount="monthlyExpenses"
+        :future-amount="futureExpenses"
+        tooltip-text="Montant projeté incluant vos dépenses futures planifiées ce mois"
+        future-amount-class="text-red-600 dark:text-red-400"
+      />
+      <SummaryCard
+        class="col-span-2 sm:col-span-1"
+        icon="i-heroicons-chart-bar"
+        icon-color="text-purple-600"
+        label="Économies"
+        :amount="savings"
+        :future-amount="futureSavings"
+        tooltip-text="Économies projetées incluant vos transactions futures et virements d'épargne planifiés ce mois"
+        :future-amount-class="(savings + futureSavings) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+      />
     </div>
 
     <!-- Accounts Section -->
@@ -155,9 +112,7 @@
                 <span class="hidden sm:inline">{{ account.account_type_display }}</span>
               </UBadge>
             </div>
-            <div class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatCurrency(parseFloat(account.current_balance || 0)) }}
-            </div>
+            <CurrencyAmount :amount="Number(account.current_balance || 0)" compact class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white" />
             <div class="text-xs text-gray-500">
               {{ account.currency }}
             </div>
@@ -183,9 +138,7 @@
             <UIcon name="i-heroicons-banknotes" class="h-6 w-6 text-primary-600 mr-2" />
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Solde total</span>
           </div>
-          <span class="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">
-            {{ formatCurrency(totalBalance) }}
-          </span>
+          <CurrencyAmount :amount="totalBalance" compact class="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400" />
         </div>
       </div>
     </div>
@@ -209,15 +162,11 @@
       <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
         <div class="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Solde prévisionnel</p>
-          <p class="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400">
-            {{ formatCurrency(budgetDashData.solde_previsionnel) }}
-          </p>
+          <CurrencyAmount :amount="budgetDashData.solde_previsionnel" compact class="text-base sm:text-xl font-bold text-blue-600 dark:text-blue-400" />
         </div>
         <div class="p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
           <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Solde réel</p>
-          <p class="text-base sm:text-xl font-bold text-green-600 dark:text-green-400">
-            {{ formatCurrency(budgetDashData.solde_reel) }}
-          </p>
+          <CurrencyAmount :amount="budgetDashData.solde_reel" compact class="text-base sm:text-xl font-bold text-green-600 dark:text-green-400" />
         </div>
         <div :class="[
           'p-3 sm:p-4 rounded-lg border',
@@ -248,75 +197,28 @@
         <template #header>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Détail par catégorie</h3>
         </template>
-        <!-- Mobile: cards list -->
-        <div class="sm:hidden space-y-3">
-          <div
-            v-for="cat in budgetDashData.categories"
-            :key="cat.category_id"
-            class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2 min-w-0">
-                <UIcon :name="cat.category_icon" class="h-4 w-4 flex-shrink-0" />
-                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ cat.category_name }}</span>
-              </div>
-              <UBadge v-if="cat.is_mandatory_savings" color="blue" variant="subtle" size="xs" class="flex-shrink-0 ml-2">Épargne</UBadge>
-              <UBadge v-else-if="cat.unbudgeted" color="gray" variant="subtle" size="xs" class="flex-shrink-0 ml-2">Non budgété</UBadge>
+        <ResponsiveTable :columns="budgetColumns" :rows="budgetDashData.categories">
+          <template #cell-category_name="{ row }">
+            <div class="flex items-center gap-2 min-w-0">
+              <UIcon :name="row.category_icon" class="h-4 w-4 flex-shrink-0" />
+              <span class="truncate">{{ row.category_name }}</span>
+              <UBadge v-if="row.is_mandatory_savings" color="blue" variant="subtle" size="xs">Épargne</UBadge>
+              <UBadge v-else-if="row.unbudgeted" color="gray" variant="subtle" size="xs">Non budgété</UBadge>
             </div>
-            <div class="grid grid-cols-3 gap-1 text-xs">
-              <div>
-                <p class="text-gray-500">Prévu</p>
-                <p class="font-medium text-gray-700 dark:text-gray-300">{{ cat.prevu > 0 ? formatCurrency(cat.prevu) : '-' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">Réel</p>
-                <p :class="['font-medium', cat.is_over ? 'text-red-600' : 'text-gray-900 dark:text-white']">{{ formatCurrency(cat.reel) }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">Écart</p>
-                <p :class="['font-bold', cat.ecart >= 0 ? 'text-green-600' : 'text-red-600']">{{ cat.ecart >= 0 ? '+' : '' }}{{ formatCurrency(cat.ecart) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Desktop: table -->
-        <div class="hidden sm:block overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-gray-200 dark:border-gray-700">
-                <th class="text-left py-2 px-3 font-medium text-gray-500">Catégorie</th>
-                <th class="text-right py-2 px-3 font-medium text-gray-500">Prévu</th>
-                <th class="text-right py-2 px-3 font-medium text-gray-500">Réel</th>
-                <th class="text-right py-2 px-3 font-medium text-gray-500">Écart</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="cat in budgetDashData.categories"
-                :key="cat.category_id"
-                class="border-b border-gray-100 dark:border-gray-800"
-              >
-                <td class="py-2 px-3">
-                  <div class="flex items-center gap-2">
-                    <UIcon :name="cat.category_icon" class="h-4 w-4" />
-                    <span class="text-gray-900 dark:text-white">{{ cat.category_name }}</span>
-                    <UBadge v-if="cat.is_mandatory_savings" color="blue" variant="subtle" size="xs">💰 Épargne obligatoire</UBadge>
-                    <UBadge v-else-if="cat.unbudgeted" color="gray" variant="subtle" size="xs">Non budgété</UBadge>
-                  </div>
-                </td>
-                <td class="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
-                  {{ cat.prevu > 0 ? formatCurrency(cat.prevu) : '-' }}
-                </td>
-                <td :class="['py-2 px-3 text-right font-medium', cat.is_over ? 'text-red-600' : 'text-gray-900 dark:text-white']">
-                  {{ formatCurrency(cat.reel) }}
-                </td>
-                <td :class="['py-2 px-3 text-right font-medium', cat.ecart >= 0 ? 'text-green-600' : 'text-red-600']">
-                  {{ cat.ecart >= 0 ? '+' : '' }}{{ formatCurrency(cat.ecart) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          </template>
+          <template #cell-prevu="{ row }">
+            <CurrencyAmount v-if="row.prevu > 0" :amount="row.prevu" class="text-gray-600 dark:text-gray-400" />
+            <span v-else class="text-gray-400">-</span>
+          </template>
+          <template #cell-reel="{ row }">
+            <CurrencyAmount :amount="row.reel" :class="row.is_over ? 'text-red-600 font-medium' : 'text-gray-900 dark:text-white font-medium'" />
+          </template>
+          <template #cell-ecart="{ row }">
+            <span :class="['font-medium', row.ecart >= 0 ? 'text-green-600' : 'text-red-600']">
+              {{ row.ecart >= 0 ? '+' : '' }}{{ formatCurrency(row.ecart) }}
+            </span>
+          </template>
+        </ResponsiveTable>
       </UCard>
       </template>
     </div>
@@ -348,41 +250,11 @@
               @action="showTransactionModal = true"
             />
           </div>
-          <div
+          <TransactionRow
             v-for="transaction in recentTransactions"
             :key="transaction.id"
-            class="flex items-center gap-3 py-2.5 border-b border-gray-200 dark:border-gray-700 last:border-0"
-          >
-            <!-- Cercle coloré avec icône selon le type -->
-            <div :class="[
-              'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
-              transaction.type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : transaction.type === 'expense' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
-            ]">
-              <UIcon
-                :name="transaction.type === 'income' ? 'i-heroicons-arrow-down-circle' : transaction.type === 'expense' ? 'i-heroicons-arrow-up-circle' : 'i-heroicons-arrow-right-circle'"
-                :class="[
-                  'h-4 w-4',
-                  transaction.type === 'income' ? 'text-green-600' : transaction.type === 'expense' ? 'text-red-600' : 'text-blue-600'
-                ]"
-              />
-            </div>
-            <!-- Description et date -->
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {{ transaction.description }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatDate(transaction.date) }}
-              </p>
-            </div>
-            <!-- Montant -->
-            <div :class="[
-              'text-sm font-semibold flex-shrink-0',
-              transaction.type === 'income' ? 'text-green-600' : transaction.type === 'expense' ? 'text-red-600' : 'text-blue-600'
-            ]">
-              {{ transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : '' }}{{ formatCurrency(Math.abs(parseFloat(transaction.amount))) }}
-            </div>
-          </div>
+            :transaction="transaction"
+          />
         </div>
       </UCard>
     </div>
@@ -423,142 +295,32 @@
       @skip="handleOnboardingComplete"
     />
 
-    <!-- Quick Transaction Modal — plein écran sur mobile, centré sur desktop -->
-    <UModal
+    <!-- Quick Transaction Modal -->
+    <TransactionModal
       v-model="showTransactionModal"
-      :ui="{
-        width: 'w-full sm:max-w-lg',
-        container: 'flex min-h-full sm:min-h-0 items-end sm:items-center justify-center',
-        base: 'relative text-left overflow-hidden w-full sm:rounded-xl rounded-t-xl rounded-b-none',
-        padding: 'p-0'
-      }"
-    >
-      <UCard>
-        <template #header>
-          <!-- Drag handle visuelle sur mobile -->
-          <div class="sm:hidden flex justify-center py-2 -mt-2 mb-2">
-            <div class="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          </div>
-          <h3 class="text-lg font-semibold">Nouvelle transaction</h3>
-        </template>
-
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Type -->
-          <UFormGroup label="Type" required :error="formErrors.type">
-            <USelectMenu
-              v-model="transactionForm.type"
-              :options="[
-                { label: 'Revenu', value: 'income', icon: 'i-heroicons-arrow-trending-up' },
-                { label: 'Dépense', value: 'expense', icon: 'i-heroicons-arrow-trending-down' },
-                { label: 'Transfert', value: 'transfer', icon: 'i-heroicons-arrow-path' }
-              ]"
-              option-attribute="label"
-              value-attribute="value"
-              size="lg"
-            />
-          </UFormGroup>
-
-          <!-- Amount -->
-          <UFormGroup :label="`Montant (${currency})`" required :error="formErrors.amount">
-            <UInput
-              v-model="transactionForm.amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              required
-              size="lg"
-              inputmode="decimal"
-              @blur="validateAmount"
-              @input="formErrors.amount = ''"
-            />
-          </UFormGroup>
-
-          <!-- Account -->
-          <UFormGroup label="Compte" required :error="formErrors.account">
-            <USelectMenu
-              v-model="transactionForm.account"
-              :options="accounts"
-              option-attribute="name"
-              value-attribute="id"
-              placeholder="Sélectionner un compte"
-              size="lg"
-              @update:model-value="formErrors.account = ''"
-            />
-          </UFormGroup>
-
-          <!-- Destination Account (only for transfers) -->
-          <UFormGroup v-if="transactionForm.type === 'transfer'" label="Compte destination" required :error="formErrors.destination_account">
-            <USelectMenu
-              v-model="transactionForm.destination_account"
-              :options="accounts.filter(a => a.id !== parseInt(transactionForm.account))"
-              option-attribute="name"
-              value-attribute="id"
-              placeholder="Sélectionner le compte de destination"
-              size="lg"
-            />
-          </UFormGroup>
-
-          <!-- Category (only for income/expense) -->
-          <UFormGroup v-if="transactionForm.type !== 'transfer'" label="Catégorie" required :error="formErrors.category">
-            <USelectMenu
-              v-model="transactionForm.category"
-              :options="filteredCategories"
-              option-attribute="name"
-              value-attribute="id"
-              placeholder="Sélectionner une catégorie"
-              size="lg"
-            />
-          </UFormGroup>
-
-          <!-- Description -->
-          <UFormGroup label="Description" :error="formErrors.description">
-            <UInput
-              v-model="transactionForm.description"
-              placeholder="Ex: Courses Migros"
-              size="lg"
-              @input="formErrors.description = ''"
-            />
-          </UFormGroup>
-
-          <!-- Date -->
-          <UFormGroup label="Date" required :error="formErrors.date">
-            <UInput
-              v-model="transactionForm.date"
-              type="date"
-              required
-              size="lg"
-            />
-          </UFormGroup>
-
-          <!-- Actions — empilés sur mobile, alignés à droite sur desktop -->
-          <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
-            <UButton block color="gray" variant="ghost" class="sm:w-auto" @click="closeModal">
-              Annuler
-            </UButton>
-            <UButton block type="submit" class="sm:w-auto" :loading="loading">
-              Créer
-            </UButton>
-          </div>
-        </form>
-      </UCard>
-    </UModal>
+      :accounts="accounts"
+      :categories="categories"
+      :initial-account="transactionInitialAccount"
+      @success="fetchDashboardData"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Transaction, PendingAlert } from '~/types';
+import type { Transaction, PendingAlert, Account, Category } from '~/types';
 
 definePageMeta({
   middleware: 'auth'
 });
 
-const { getAccountsSummary, getAccounts } = useAccounts();
-const { getTransactions, getStatistics, createTransaction, updateTransaction } = useTransactions();
+const { getAccounts } = useAccounts();
+const { getTransactions, getStatistics, updateTransaction } = useTransactions();
 const { getCategories } = useCategories();
 const { getDashboardData: getBudgetDashboardData } = useBudgets();
 const { getAlerts, dismissAlert } = useAlerts();
 const { registerShortcut, getShortcutLabel } = useKeyboardShortcuts();
-const { currency, ensureProfileLoaded } = useUserProfile();
+const { ensureProfileLoaded } = useUserProfile();
+const { formatForToast } = useErrorHandler();
 const toast = useToast();
 
 // Keyboard shortcut label for the button
@@ -566,8 +328,8 @@ const shortcutLabel = computed(() => getShortcutLabel('n', { ctrl: true }));
 
 // Reactive state
 const totalBalance = ref(0);
-const accounts = ref<any[]>([]);
-const categories = ref<any[]>([]);
+const accounts = ref<Account[]>([]);
+const categories = ref<Category[]>([]);
 const monthlyIncome = ref(0);
 const monthlyExpenses = ref(0);
 const savings = ref(0);
@@ -577,9 +339,8 @@ const futureTransfers = ref(0);
 const monthlyTransfers = ref(0);
 const recentTransactions = ref<Transaction[]>([]);
 const showTransactionModal = ref(false);
-const loading = ref(false);
+const transactionInitialAccount = ref<number | string>('');
 const initialLoading = ref(true);
-const formErrors = ref<Record<string, string>>({});
 const budgetDashData = ref<any>(null);
 
 // Onboarding state
@@ -592,38 +353,18 @@ const correctionAlert = ref<PendingAlert | null>(null);
 const correctionCategory = ref<string | number>('');
 const correcting = ref(false);
 
-// Transaction form
-const transactionForm = ref<{
-  type: string;
-  amount: string;
-  account: string | number;
-  destination_account: string | number;
-  category: string | number;
-  description: string;
-  date: string;
-}>({
-  type: 'expense',
-  amount: '',
-  account: '',
-  destination_account: '',
-  category: '',
-  description: '',
-  date: new Date().toISOString().split('T')[0]
-});
-
-// Filtered categories based on transaction type
-const filteredCategories = computed(() => {
-  return categories.value.filter(cat => {
-    if (transactionForm.value.type === 'income') return cat.type === 'income';
-    if (transactionForm.value.type === 'expense') return cat.type === 'expense';
-    return false;
-  });
-});
-
 // Calculate future savings (future income - future expenses - future transfers)
 const futureSavings = computed(() => {
   return futureIncome.value - futureExpenses.value - futureTransfers.value;
 });
+
+// Budget table columns
+const budgetColumns = [
+  { key: 'category_name', label: 'Catégorie' },
+  { key: 'prevu', label: 'Prévu', class: 'text-right' },
+  { key: 'reel', label: 'Réel', class: 'text-right' },
+  { key: 'ecart', label: 'Écart', class: 'text-right' },
+];
 
 // Month navigation
 const selectedMonthDate = ref(new Date());
@@ -726,7 +467,6 @@ const handleCorrection = async () => {
     toast.add({ title: 'Corrigé', description: 'Catégorie mise à jour', color: 'green' });
     await fetchDashboardData();
   } else if (result.error) {
-    const { formatForToast } = useErrorHandler();
     const errorMessage = formatForToast(result.error);
     toast.add({ title: 'Erreur', description: errorMessage, color: 'red' });
   } else {
@@ -746,7 +486,7 @@ const fetchDashboardData = async () => {
       accounts.value = accountsResponse.data.results;
       // Calculate total balance from current balances (excluant les transactions futures)
       totalBalance.value = accounts.value.reduce((sum, account) => {
-        return sum + parseFloat(account.current_balance || 0);
+        return sum + Number(account.current_balance || 0);
       }, 0);
     }
 
@@ -757,15 +497,16 @@ const fetchDashboardData = async () => {
     }
 
     // Check if first time user (no accounts and no categories)
-    if (process.client && accounts.value.length === 0 && categories.value.length === 0) {
+    if (import.meta.client && accounts.value.length === 0 && categories.value.length === 0) {
       const hasCompletedOnboarding = localStorage.getItem('onboarding_completed');
       if (!hasCompletedOnboarding) {
         showOnboarding.value = true;
       }
     }
 
-    // Fetch recent transactions
-    const transactionsResponse = await getTransactions({ ordering: '-date' });
+    // Fetch recent transactions (past only, limit to 5)
+    const today = new Date().toISOString().split('T')[0];
+    const transactionsResponse = await getTransactions({ ordering: '-date', end_date: today });
     if (transactionsResponse.success && transactionsResponse.data) {
       recentTransactions.value = transactionsResponse.data.results.slice(0, 5);
     }
@@ -778,110 +519,10 @@ const fetchDashboardData = async () => {
   }
 };
 
-// Handle form submission
-const handleSubmit = async () => {
-  loading.value = true;
-  formErrors.value = {}; // Reset errors
-
-  const transactionData: any = {
-    type: transactionForm.value.type,
-    amount: transactionForm.value.amount,
-    account: parseInt(transactionForm.value.account),
-    description: transactionForm.value.description,
-    date: transactionForm.value.date
-  };
-
-  // Add category for income/expense
-  if (transactionForm.value.type !== 'transfer' && transactionForm.value.category) {
-    transactionData.category = parseInt(transactionForm.value.category);
-  }
-
-  // Add destination account for transfers
-  if (transactionForm.value.type === 'transfer' && transactionForm.value.destination_account) {
-    transactionData.destination_account = parseInt(transactionForm.value.destination_account);
-  }
-
-  const result = await createTransaction(transactionData);
-  loading.value = false;
-
-  if (result.success) {
-    toast.add({
-      title: 'Succès',
-      description: 'Transaction créée avec succès',
-      color: 'green'
-    });
-    closeModal();
-    await fetchDashboardData(); // Refresh data
-  } else {
-    // Parse validation errors
-    if (result.error?.data) {
-      const errors = result.error.data;
-      // Convert error arrays to strings
-      Object.keys(errors).forEach(key => {
-        if (Array.isArray(errors[key])) {
-          formErrors.value[key] = errors[key][0];
-        } else if (typeof errors[key] === 'string') {
-          formErrors.value[key] = errors[key];
-        }
-      });
-
-      // Show first error in toast
-      const firstError = Object.values(formErrors.value)[0];
-      toast.add({
-        title: 'Erreur de validation',
-        description: firstError || 'Veuillez vérifier les champs du formulaire',
-        color: 'red'
-      });
-    } else {
-      toast.add({
-        title: 'Erreur',
-        description: 'Impossible de créer la transaction',
-        color: 'red'
-      });
-    }
-  }
-};
-
-// Real-time validation functions
-const validateAmount = () => {
-  const amount = parseFloat(transactionForm.value.amount);
-  if (!transactionForm.value.amount) {
-    formErrors.value.amount = 'Le montant est requis';
-  } else if (isNaN(amount) || amount <= 0) {
-    formErrors.value.amount = 'Le montant doit être supérieur à 0';
-  } else {
-    formErrors.value.amount = '';
-  }
-};
-
-// Close modal and reset form
-const closeModal = () => {
-  showTransactionModal.value = false;
-  formErrors.value = {}; // Reset errors
-  transactionForm.value = {
-    type: 'expense',
-    amount: '',
-    account: '',
-    destination_account: '',
-    category: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0]
-  };
-};
-
 // Open transaction modal with pre-selected account
 const openTransactionWithAccount = (accountId: number) => {
-  transactionForm.value.account = accountId;
+  transactionInitialAccount.value = accountId;
   showTransactionModal.value = true;
-};
-
-// Utility functions
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
 };
 
 // Handle onboarding completion
@@ -898,8 +539,7 @@ const handleOnboardingComplete = async () => {
 // Load data on mount
 onMounted(async () => {
   await ensureProfileLoaded();
-  fetchDashboardData();
-  fetchAlerts();
+  await Promise.all([fetchDashboardData(), fetchAlerts()]);
 
   // Register keyboard shortcut: Ctrl+N or Cmd+N for new transaction
   registerShortcut('n', () => {

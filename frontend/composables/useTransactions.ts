@@ -106,9 +106,9 @@ export const useTransactions = () => {
     end_date?: string
   }): Promise<{
     data: {
-      income: { total: number; count: number }
-      expense: { total: number; count: number }
-      transfer: { total: number; count: number }
+      income: { total: number; count: number; future?: number }
+      expense: { total: number; count: number; future?: number }
+      transfer: { total: number; count: number; future?: number }
       net: number
     } | null
     success: boolean
