@@ -8,14 +8,16 @@ const { getTransactions, createTransaction, updateTransaction, deleteTransaction
 const { updateSeries } = useRecurring()
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
+const { getBudgets } = useBudgets()
 const { getErrorForField, formatForToast } = useErrorHandler()
-const { ensureProfileLoaded } = useUserProfile()
+const { ensureProfileLoaded, budgetStartDay, getCurrentBudgetMonth, getBudgetPeriodDates } = useUserProfile()
 const toast = useToast()
 
 // ── Data ────────────────────────────────────────────────────
 const transactions = ref<Transaction[]>([])
 const accounts = ref<Account[]>([])
 const categories = ref<Category[]>([])
+const spendingBudgets = ref<{ id: number; name: string }[]>([])
 const loading = ref(false)
 const loadError = ref(false)
 
@@ -123,10 +125,11 @@ const form = ref({
   type: 'expense' as 'income' | 'expense' | 'transfer',
   account: '', category: '', destination_account: '',
   amount: '', description: '', date: new Date().toISOString().split('T')[0],
-  notes: '', is_recurring: false, recurrence_frequency: '', recurrence_interval: 1, recurrence_end_date: ''
+  notes: '', is_recurring: false, recurrence_frequency: '', recurrence_interval: 1, recurrence_end_date: '',
+  refund_budget: null as number | null,
 })
 
-watch(() => form.value.type, () => { form.value.category = ''; form.value.destination_account = '' })
+watch(() => form.value.type, () => { form.value.category = ''; form.value.destination_account = ''; form.value.refund_budget = null })
 
 const incomeCategories = computed(() => categories.value.filter(c => c.type === 'income'))
 const expenseCategories = computed(() => categories.value.filter(c => c.type === 'expense'))
@@ -144,14 +147,16 @@ const openModal = (transaction?: Transaction) => {
       notes: transaction.notes || '', is_recurring: transaction.is_recurring,
       recurrence_frequency: transaction.recurrence_frequency || '',
       recurrence_interval: transaction.recurrence_interval,
-      recurrence_end_date: transaction.recurrence_end_date || ''
+      recurrence_end_date: transaction.recurrence_end_date || '',
+      refund_budget: transaction.refund_budget ?? null,
     }
   } else {
     editingTransaction.value = null
     form.value = {
       type: 'expense', account: '', category: '', destination_account: '',
       amount: '', description: '', date: new Date().toISOString().split('T')[0],
-      notes: '', is_recurring: false, recurrence_frequency: '', recurrence_interval: 1, recurrence_end_date: ''
+      notes: '', is_recurring: false, recurrence_frequency: '', recurrence_interval: 1, recurrence_end_date: '',
+      refund_budget: null,
     }
   }
   showModal.value = true
@@ -169,6 +174,7 @@ const handleSubmit = async () => {
   if (form.value.type !== 'transfer' && form.value.category) data.category = parseInt(form.value.category)
   if (form.value.type === 'transfer' && form.value.destination_account) data.destination_account = parseInt(form.value.destination_account)
   if (form.value.notes) data.notes = form.value.notes
+  data.refund_budget = form.value.type === 'income' ? (form.value.refund_budget ?? null) : null
   if (form.value.is_recurring) {
     data.recurrence_frequency = form.value.recurrence_frequency
     data.recurrence_interval = form.value.recurrence_interval
@@ -228,12 +234,16 @@ const executeDelete = async () => {
 // ── Fetch ─────────────────────────────────────────────────────
 const fetchTransactions = async () => {
   loading.value = true; loadError.value = false
-  const d = currentMonthDate.value, year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const lastDay = new Date(year, d.getMonth() + 1, 0).getDate()
+  const d = currentMonthDate.value
+  const year = d.getFullYear()
+  const month = d.getMonth() + 1
+  const startDay = budgetStartDay.value
+  const { startDate, endDate } = getBudgetPeriodDates(year, month, startDay)
   const result = await getTransactions({
-    ordering: '-date,-created_at', start_date: `${year}-${month}-01`,
-    end_date: `${year}-${month}-${lastDay}`, page_size: 500
+    ordering: '-date,-created_at',
+    start_date: startDate,
+    end_date: endDate,
+    page_size: 500
   })
   if (result.success && result.data) transactions.value = result.data.results
   else loadError.value = true
@@ -241,6 +251,10 @@ const fetchTransactions = async () => {
 }
 const fetchAccounts = async () => { const r = await getAccounts(); if (r.success && r.data) accounts.value = r.data.results }
 const fetchCategories = async () => { const r = await getCategories(); if (r.success && r.data) categories.value = r.data.results }
+const fetchBudgets = async () => {
+  const r = await getBudgets({ is_active: true })
+  if (r.data?.results) spendingBudgets.value = r.data.results.filter(b => !b.is_savings_goal).map(b => ({ id: b.id, name: b.name }))
+}
 const fetchStats = async () => { await getStatistics() }
 
 const onMonthChange = ({ year, month }: { year: number; month: number }) => {
@@ -251,8 +265,11 @@ watch(currentMonthDate, () => fetchTransactions())
 
 onMounted(async () => {
   await ensureProfileLoaded()
+  // Initialise la navigation au mois budgétaire courant (selon budget_start_day)
+  const { year, month } = getCurrentBudgetMonth(budgetStartDay.value)
+  currentMonthDate.value = new Date(year, month - 1, 1)
   await generateRecurring()
-  fetchTransactions(); fetchAccounts(); fetchCategories(); fetchStats()
+  fetchTransactions(); fetchAccounts(); fetchCategories(); fetchStats(); fetchBudgets()
   document.addEventListener('click', (e) => {
     if (!(e.target as Element)?.closest('.tx-dropdown')) closeDropdowns()
   })
@@ -577,6 +594,15 @@ onMounted(async () => {
           <UFormGroup v-if="form.type === 'transfer'" label="Compte destination" required>
             <USelectMenu v-model="form.destination_account" :options="accounts.filter(a => a.id.toString() !== form.account)" option-attribute="name" value-attribute="id" placeholder="Sélectionner un compte" />
             <FormFieldError :error="getErrorForField(formErrors, 'destination_account')" />
+          </UFormGroup>
+          <UFormGroup v-if="form.type === 'income'" label="Rembourse une enveloppe" hint="Optionnel">
+            <USelectMenu
+              v-model="form.refund_budget"
+              :options="[{ id: null, name: '— Aucune —' }, ...spendingBudgets]"
+              option-attribute="name"
+              value-attribute="id"
+              placeholder="— Aucune —"
+            />
           </UFormGroup>
           <UFormGroup label="Montant" required>
             <UInput v-model="form.amount" type="number" step="0.01" placeholder="0.00" required />

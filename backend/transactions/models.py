@@ -108,6 +108,16 @@ class Transaction(models.Model):
         default='web',
         verbose_name='Source'
     )
+    # Remboursement d'enveloppe budget
+    refund_budget = models.ForeignKey(
+        'budgets.Budget',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='refund_transactions',
+        verbose_name='Rembourse l\'enveloppe',
+        help_text='Si renseigné, ce revenu réduit les dépenses de cette enveloppe budget'
+    )
     # Série récurrente — lien entre le template et ses instances générées
     recurring_series_id = models.UUIDField(
         null=True,

@@ -8,6 +8,59 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_current_budget_month(today, start_day=1):
+    """
+    Retourne (year, month) du mois budgétaire courant selon le jour de début.
+
+    Avec start_day=25 et today=2 juin → mois budgétaire = Juin (on est entre le 25 mai et le 24 juin).
+    Avec start_day=25 et today=26 juin → mois budgétaire = Juillet (nouvelle période commencée le 25 juin).
+    Avec start_day=1 → comportement calendaire normal.
+
+    Args:
+        today: date — la date du jour
+        start_day: int — jour de début de la période budgétaire (1-31)
+
+    Returns:
+        tuple (int, int) — (year, month) du mois budgétaire courant
+    """
+    if start_day <= 1:
+        return today.year, today.month
+    if today.day >= start_day:
+        # La nouvelle période a commencé ce mois-ci → le mois budgétaire est le mois suivant
+        if today.month == 12:
+            return today.year + 1, 1
+        return today.year, today.month + 1
+    return today.year, today.month
+
+
+def get_budget_period(year, month, start_day=1):
+    """
+    Retourne (start_date, end_date) pour le mois budgétaire (year, month).
+
+    Avec start_day=25 et (year=2026, month=6) → 25 mai 2026 au 24 juin 2026.
+    Avec start_day=1 → du 1er au dernier jour du mois calendaire.
+
+    Args:
+        year: int — année du mois budgétaire
+        month: int — mois du mois budgétaire (1-12)
+        start_day: int — jour de début de la période budgétaire (1-31)
+
+    Returns:
+        tuple (date, date) — (start_date, end_date) inclusifs
+    """
+    from datetime import date as _date
+    if start_day <= 1:
+        last_day = calendar.monthrange(year, month)[1]
+        return _date(year, month, 1), _date(year, month, last_day)
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    # Gérer le cas où start_day dépasse le nombre de jours du mois précédent (ex: 31 en février)
+    actual_start_day = min(start_day, calendar.monthrange(prev_year, prev_month)[1])
+    start = _date(prev_year, prev_month, actual_start_day)
+    end = _date(year, month, start_day - 1)
+    return start, end
+
+
 class Budget(models.Model):
     """
     Modèle pour définir des budgets par catégorie
@@ -68,28 +121,39 @@ class Budget(models.Model):
     def __str__(self):
         return f"{self.name} - {self.amount} ({self.get_period_display()})"
 
+    def _get_start_day(self):
+        """
+        Retourne le jour de début de période budgétaire depuis le profil utilisateur.
+        Fallback à 1 si le profil n'existe pas.
+        """
+        try:
+            return self.user.profile.budget_start_day or 1
+        except Exception:
+            return 1
+
     def get_spent_amount(self):
         """
-        Calcule le montant dépensé pour ce budget sur la période en cours
-        (exclut les transactions avec une date future)
-        Pour les objectifs d'épargne, calcule les transferts vers comptes épargne
+        Calcule le montant dépensé pour ce budget sur la période budgétaire en cours.
+        Délègue à get_spent_amount_for_period avec le mois budgétaire courant calculé
+        selon budget_start_day du profil utilisateur.
+        Pour les objectifs d'épargne, calcule les transferts vers comptes épargne.
         """
-        from transactions.models import Transaction
-        from accounts.models import Account
         from datetime import date, timedelta
 
         today = date.today()
 
-        # Calculer la période en cours
+        if self.period == 'monthly':
+            start_day = self._get_start_day()
+            year, month = get_current_budget_month(today, start_day)
+            return self.get_spent_amount_for_period(year, month)
+
+        # Périodes non-mensuelles : logique inchangée
+        from transactions.models import Transaction
+        from accounts.models import Account
+
         if self.period == 'weekly':
             start = today - timedelta(days=today.weekday())
             end = start + timedelta(days=6)
-        elif self.period == 'monthly':
-            start = date(today.year, today.month, 1)
-            if today.month == 12:
-                end = date(today.year + 1, 1, 1) - timedelta(days=1)
-            else:
-                end = date(today.year, today.month + 1, 1) - timedelta(days=1)
         else:  # yearly
             start = date(today.year, 1, 1)
             end = date(today.year, 12, 31)
@@ -100,8 +164,6 @@ class Budget(models.Model):
         if self.end_date and end > self.end_date:
             end = self.end_date
 
-        # Calculer le total des dépenses (excluant les transactions futures)
-        # Ne compter que les transactions avec une date <= aujourd'hui
         end = min(end, today)
 
         # Si c'est un objectif d'épargne, calculer les transferts vers comptes épargne
@@ -151,26 +213,43 @@ class Budget(models.Model):
             ).exclude(type='adjustment')
 
             logger.debug(f"   Dépenses trouvées: {expenses.count()}")
-            total = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
-            logger.debug(f"   💸 Total dépensé: {total} CHF")
+            spent = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+
+            refunds = Transaction.objects.filter(
+                user=self.user,
+                refund_budget=self,
+                type='income',
+                date__gte=start,
+                date__lte=end
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+
+            total = max(Decimal('0.00'), spent - refunds)
+            logger.debug(f"   💸 Total dépensé: {spent} CHF, remboursements: {refunds} CHF, net: {total} CHF")
 
         return total
 
     def get_spent_amount_for_period(self, year, month):
         """
-        Calcule le montant dépensé pour ce budget sur un mois précis.
-        Pour les mois passés, retourne le total complet du mois.
+        Calcule le montant dépensé pour ce budget sur un mois budgétaire précis.
+        Utilise get_budget_period pour calculer les bornes selon budget_start_day.
+        Pour les mois passés, retourne le total complet de la période.
         Pour le mois en cours ou futur, cap à aujourd'hui.
+
+        Args:
+            year: int — année du mois budgétaire
+            month: int — mois budgétaire (1-12)
+
+        Returns:
+            Decimal — montant dépensé sur la période
         """
         from transactions.models import Transaction
         from accounts.models import Account
         from datetime import date
 
         today = date.today()
+        start_day = self._get_start_day()
 
-        start = date(year, month, 1)
-        last_day = calendar.monthrange(year, month)[1]
-        end = date(year, month, last_day)
+        start, end = get_budget_period(year, month, start_day)
 
         # Filtrer par les dates du budget si définies
         if self.start_date and start < self.start_date:
@@ -178,8 +257,9 @@ class Budget(models.Model):
         if self.end_date and end > self.end_date:
             end = self.end_date
 
-        # Cap à aujourd'hui pour le mois courant ou futur
-        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
+        # Cap à aujourd'hui pour le mois budgétaire courant ou futur
+        cur_year, cur_month = get_current_budget_month(today, start_day)
+        cap = min(end, today) if (year, month) >= (cur_year, cur_month) else end
 
         if self.is_savings_goal:
             savings_accounts = Account.objects.filter(
@@ -195,7 +275,7 @@ class Budget(models.Model):
                 date__lte=cap
             ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
         else:
-            total = Transaction.objects.filter(
+            spent = Transaction.objects.filter(
                 user=self.user,
                 category=self.category,
                 type='expense',
@@ -203,12 +283,23 @@ class Budget(models.Model):
                 date__lte=cap
             ).exclude(type='adjustment').aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
 
+            refunds = Transaction.objects.filter(
+                user=self.user,
+                refund_budget=self,
+                type='income',
+                date__gte=start,
+                date__lte=cap
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+
+            total = max(Decimal('0.00'), spent - refunds)
+
         return total
 
     def get_projected_amount(self):
         """
-        Calcule le montant projeté (dépensé + transactions futures) pour ce budget sur la période en cours
-        Inclut toutes les transactions jusqu'à la fin de la période, y compris les futures
+        Calcule le montant projeté (dépensé + transactions futures) pour ce budget sur la période en cours.
+        Inclut toutes les transactions jusqu'à la fin de la période budgétaire, y compris les futures.
+        Utilise budget_start_day pour calculer les bornes de la période mensuelle.
         """
         from transactions.models import Transaction
         from accounts.models import Account
@@ -216,16 +307,13 @@ class Budget(models.Model):
 
         today = date.today()
 
-        # Calculer la période en cours
-        if self.period == 'weekly':
+        if self.period == 'monthly':
+            start_day = self._get_start_day()
+            year, month = get_current_budget_month(today, start_day)
+            start, end = get_budget_period(year, month, start_day)
+        elif self.period == 'weekly':
             start = today - timedelta(days=today.weekday())
             end = start + timedelta(days=6)
-        elif self.period == 'monthly':
-            start = date(today.year, today.month, 1)
-            if today.month == 12:
-                end = date(today.year + 1, 1, 1) - timedelta(days=1)
-            else:
-                end = date(today.year, today.month + 1, 1) - timedelta(days=1)
         else:  # yearly
             start = date(today.year, 1, 1)
             end = date(today.year, 12, 31)
@@ -266,7 +354,17 @@ class Budget(models.Model):
                 date__lte=end
             ).exclude(type='adjustment')
 
-            total = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+            spent = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+
+            refunds = Transaction.objects.filter(
+                user=self.user,
+                refund_budget=self,
+                type='income',
+                date__gte=start,
+                date__lte=end
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+
+            total = max(Decimal('0.00'), spent - refunds)
 
         return total
 

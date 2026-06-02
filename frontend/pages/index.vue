@@ -452,7 +452,7 @@ const { getCategories } = useCategories();
 const { getDashboardData: getBudgetDashboardData } = useBudgets();
 const { getAlerts, dismissAlert } = useAlerts();
 const { registerShortcut } = useKeyboardShortcuts();
-const { ensureProfileLoaded } = useUserProfile();
+const { ensureProfileLoaded, budgetStartDay, getCurrentBudgetMonth } = useUserProfile();
 const { formatForToast } = useErrorHandler();
 const toast = useToast();
 
@@ -716,6 +716,9 @@ const handleOnboardingComplete = async () => {
 
 onMounted(async () => {
   await ensureProfileLoaded();
+  // Initialise la navigation au mois budgétaire courant (selon budget_start_day)
+  const { year, month } = getCurrentBudgetMonth(budgetStartDay.value);
+  selectedMonthDate.value = new Date(year, month - 1, 1);
   await Promise.all([fetchDashboardData(), fetchAlerts(), fetchMonthlyHistory(), fetchUpcoming()]);
   registerShortcut('n', () => { showTransactionModal.value = true; }, {
     modifiers: { ctrl: true },

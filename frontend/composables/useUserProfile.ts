@@ -44,6 +44,47 @@ export const useUserProfile = () => {
   // Computed property for currency with fallback to CHF
   const currency = computed(() => userProfile.value?.currency || 'CHF')
 
+  // Computed property for budget start day with fallback to 1 (calendar month)
+  const budgetStartDay = computed(() => userProfile.value?.budget_start_day ?? 1)
+
+  /**
+   * Returns the budget month (year, month) for today's date given a start day.
+   * With startDay=25 and today=June 2 → { year: 2026, month: 6 } (between May 25 and June 24)
+   * With startDay=25 and today=June 26 → { year: 2026, month: 7 } (new period started June 25)
+   */
+  const getCurrentBudgetMonth = (startDay: number): { year: number; month: number } => {
+    const today = new Date()
+    if (startDay <= 1) return { year: today.getFullYear(), month: today.getMonth() + 1 }
+    if (today.getDate() >= startDay) {
+      // New period started this month → budget month is next calendar month
+      const next = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+      return { year: next.getFullYear(), month: next.getMonth() + 1 }
+    }
+    return { year: today.getFullYear(), month: today.getMonth() + 1 }
+  }
+
+  /**
+   * Returns ISO date strings for the start and end of a budget period (year, month).
+   * With startDay=25 and (2026, 6) → { startDate: '2026-05-25', endDate: '2026-06-24' }
+   * With startDay=1 → standard calendar month bounds
+   */
+  const getBudgetPeriodDates = (year: number, month: number, startDay: number): { startDate: string; endDate: string } => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    if (startDay <= 1) {
+      const lastDay = new Date(year, month, 0).getDate()
+      return { startDate: `${year}-${pad(month)}-01`, endDate: `${year}-${pad(month)}-${pad(lastDay)}` }
+    }
+    const prevMonth = month === 1 ? 12 : month - 1
+    const prevYear = month === 1 ? year - 1 : year
+    // Clamp start day to the actual number of days in the previous month (e.g. day 31 in February)
+    const lastDayOfPrev = new Date(prevYear, prevMonth, 0).getDate()
+    const actualStart = Math.min(startDay, lastDayOfPrev)
+    return {
+      startDate: `${prevYear}-${pad(prevMonth)}-${pad(actualStart)}`,
+      endDate: `${year}-${pad(month)}-${pad(startDay - 1)}`
+    }
+  }
+
   // Flag to track if profile has been loaded
   const isProfileLoaded = useState<boolean>('isProfileLoaded', () => false)
 
@@ -214,6 +255,9 @@ export const useUserProfile = () => {
   return {
     userProfile,
     currency,
+    budgetStartDay,
+    getCurrentBudgetMonth,
+    getBudgetPeriodDates,
     fetchProfile,
     ensureProfileLoaded,
     getProfile,

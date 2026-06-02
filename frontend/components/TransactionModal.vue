@@ -42,7 +42,7 @@
             type="button"
             class="type-tab"
             :class="form.type === t.value ? `type-tab--active type-tab--${t.value}` : ''"
-            @click="form.type = t.value; form.category = ''"
+            @click="form.type = t.value; form.category = ''; form.refund_budget = null"
           >
             <UIcon :name="t.icon" style="width:14px;height:14px;" />
             {{ t.label }}
@@ -113,6 +113,23 @@
           <p v-if="formErrors.category" class="field-err">{{ formErrors.category }}</p>
         </div>
 
+        <!-- Rembourse enveloppe (revenus uniquement) -->
+        <div v-if="form.type === 'income'" class="field-group">
+          <label class="field-label">Rembourse une enveloppe <span class="field-optional">(optionnel)</span></label>
+          <USelectMenu
+            v-model="form.refund_budget"
+            :options="[{ id: null, name: '— Aucune —' }, ...spendingBudgets]"
+            option-attribute="name"
+            value-attribute="id"
+            placeholder="— Aucune —"
+            size="lg"
+          />
+          <p v-if="form.refund_budget" class="field-hint">
+            <UIcon name="i-heroicons-arrow-uturn-left" style="width:12px;height:12px;vertical-align:middle;" />
+            Ce revenu sera déduit des dépenses de l'enveloppe sélectionnée
+          </p>
+        </div>
+
         <!-- Description -->
         <div class="field-group">
           <label class="field-label">Description</label>
@@ -173,9 +190,20 @@ const emit = defineEmits<{
 }>();
 
 const { createTransaction, updateTransaction } = useTransactions();
+const { getBudgets } = useBudgets();
 const { currency } = useUserProfile();
 const { formatForToast } = useErrorHandler();
 const toast = useToast();
+
+const spendingBudgets = ref<{ id: number; name: string }[]>([]);
+onMounted(async () => {
+  const result = await getBudgets({ is_active: true });
+  if (result.data?.results) {
+    spendingBudgets.value = result.data.results
+      .filter(b => !b.is_savings_goal)
+      .map(b => ({ id: b.id, name: b.name }));
+  }
+});
 
 const loading = ref(false);
 const formErrors = ref<Record<string, string>>({});
@@ -192,6 +220,7 @@ const defaultForm = () => ({
   account: props.initialAccount ?? '' as string | number,
   destination_account: '' as string | number,
   category: '' as string | number,
+  refund_budget: null as number | null,
   description: '',
   date: new Date().toISOString().split('T')[0],
 });
@@ -207,6 +236,7 @@ watch(() => props.modelValue, (open) => {
         account: props.editingTransaction.account,
         destination_account: props.editingTransaction.destination_account ?? '',
         category: props.editingTransaction.category ?? '',
+        refund_budget: props.editingTransaction.refund_budget ?? null,
         description: props.editingTransaction.description ?? '',
         date: props.editingTransaction.date,
       };
@@ -253,11 +283,17 @@ const handleSubmit = async () => {
     description: form.value.description,
     date: form.value.date,
   };
-  if (form.value.type !== 'transfer' && form.value.category) {
-    data.category = Number(form.value.category);
+  if (form.value.type !== 'transfer') {
+    // Toujours envoyer category explicitement (null pour vider l'ancienne valeur si type a changé)
+    data.category = form.value.category ? Number(form.value.category) : null;
   }
   if (form.value.type === 'transfer' && form.value.destination_account) {
     data.destination_account = Number(form.value.destination_account);
+  }
+  if (form.value.type === 'income') {
+    data.refund_budget = form.value.refund_budget ?? null;
+  } else {
+    data.refund_budget = null;
   }
 
   const result = props.editingTransaction
@@ -387,6 +423,8 @@ const handleSubmit = async () => {
 }
 .field-input::placeholder { color: var(--ink-4); }
 .field-err { margin: 0; font-size: 12px; color: var(--danger); }
+.field-optional { color: var(--ink-4); font-weight: 400; }
+.field-hint { margin: 0; font-size: 12px; color: var(--success); display: flex; align-items: center; gap: 4px; }
 
 /* Footer */
 .modal-footer {

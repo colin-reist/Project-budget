@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Budget, SavingsGoal
+from .models import Budget, SavingsGoal, get_budget_period, get_current_budget_month
 from .serializers import BudgetSerializer, BudgetListSerializer, SavingsGoalSerializer, SavingsGoalListSerializer
 
 
@@ -41,14 +41,26 @@ class BudgetViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self):
         """
         Ajoute year/month au contexte pour permettre le calcul historique des dépenses.
+        Utilise le mois budgétaire courant (selon budget_start_day) comme valeur par défaut.
         """
+        from authentication.models import UserProfile
+
         context = super().get_serializer_context()
         today = date.today()
+
         try:
-            year = int(self.request.query_params.get('year', today.year))
-            month = int(self.request.query_params.get('month', today.month))
+            profile = UserProfile.objects.get(user=self.request.user)
+            start_day = profile.budget_start_day or 1
+        except Exception:
+            start_day = 1
+
+        cur_year, cur_month = get_current_budget_month(today, start_day)
+
+        try:
+            year = int(self.request.query_params.get('year', cur_year))
+            month = int(self.request.query_params.get('month', cur_month))
         except (ValueError, TypeError):
-            year, month = today.year, today.month
+            year, month = cur_year, cur_month
         context['year'] = year
         context['month'] = month
         return context
@@ -62,14 +74,27 @@ class BudgetViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def summary(self, request):
         """
-        Retourne un résumé des budgets actifs pour le mois sélectionné.
+        Retourne un résumé des budgets actifs pour le mois budgétaire sélectionné.
+        Prend en compte budget_start_day du profil utilisateur pour déterminer le mois courant.
         """
+        from authentication.models import UserProfile
+
         today = date.today()
+
+        # Récupérer le start_day du profil pour calculer le mois budgétaire courant
         try:
-            year = int(request.query_params.get('year', today.year))
-            month = int(request.query_params.get('month', today.month))
+            profile = UserProfile.objects.get(user=request.user)
+            start_day = profile.budget_start_day or 1
+        except UserProfile.DoesNotExist:
+            start_day = 1
+
+        cur_year, cur_month = get_current_budget_month(today, start_day)
+
+        try:
+            year = int(request.query_params.get('year', cur_year))
+            month = int(request.query_params.get('month', cur_month))
         except (ValueError, TypeError):
-            year, month = today.year, today.month
+            year, month = cur_year, cur_month
 
         budgets = list(self.get_queryset().filter(is_active=True))
 
@@ -111,18 +136,31 @@ class BudgetViewSet(viewsets.ModelViewSet):
         user = request.user
         today = date.today()
 
-        # Bornes du mois sélectionné (ou mois en cours par défaut)
+        # Récupérer le start_day du profil pour calculer les bornes budgétaires
         try:
-            year = int(request.query_params.get('year', today.year))
-            month = int(request.query_params.get('month', today.month))
-        except (ValueError, TypeError):
-            year, month = today.year, today.month
+            profile = UserProfile.objects.get(user=user)
+            monthly_income = profile.monthly_income
+            start_day = profile.budget_start_day or 1
+        except UserProfile.DoesNotExist:
+            monthly_income = Decimal('0.00')
+            start_day = 1
 
-        start = date(year, month, 1)
-        if month == 12:
-            end = date(year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end = date(year, month + 1, 1) - timedelta(days=1)
+        # Mois budgétaire courant selon start_day
+        cur_year, cur_month = get_current_budget_month(today, start_day)
+
+        # Utiliser le mois budgétaire courant par défaut si year/month non fournis
+        try:
+            if 'year' not in request.query_params and 'month' not in request.query_params:
+                year, month = cur_year, cur_month
+            else:
+                year = int(request.query_params.get('year', cur_year))
+                month = int(request.query_params.get('month', cur_month))
+        except (ValueError, TypeError):
+            year, month = cur_year, cur_month
+
+        # Bornes de la période budgétaire selon start_day
+        start, end = get_budget_period(year, month, start_day)
+        cap = min(end, today) if (year, month) >= (cur_year, cur_month) else end
 
         # Budgets actifs mensuels (hors objectifs épargne ciblée)
         # Inclut les budgets normaux ET l'épargne obligatoire
@@ -132,13 +170,6 @@ class BudgetViewSet(viewsets.ModelViewSet):
             Q(is_savings_goal=False) | Q(is_mandatory_savings=True)
         ).select_related('category')
 
-        # Revenu mensuel du profil
-        try:
-            profile = UserProfile.objects.get(user=user)
-            monthly_income = profile.monthly_income
-        except UserProfile.DoesNotExist:
-            monthly_income = Decimal('0.00')
-
         # Données par catégorie
         categories_data = []
         budgeted_category_ids = set()
@@ -146,7 +177,6 @@ class BudgetViewSet(viewsets.ModelViewSet):
         total_actual = Decimal('0.00')
 
         from accounts.models import Account as BudgetAccount
-        cap = min(end, today) if (year, month) >= (today.year, today.month) else end
 
         for budget in budgets:
             # Calculer le montant dépensé pour le mois sélectionné (pas le mois courant)
@@ -168,6 +198,13 @@ class BudgetViewSet(viewsets.ModelViewSet):
                         type='expense', date__gte=start, date__lte=cap
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 )
+                refunds = (
+                    Transaction.objects.filter(
+                        user=user, refund_budget=budget,
+                        type='income', date__gte=start, date__lte=cap
+                    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+                )
+                spent = max(Decimal('0.00'), spent - refunds)
 
             total_budget += budget.amount
             total_actual += spent
@@ -248,6 +285,8 @@ class BudgetViewSet(viewsets.ModelViewSet):
             'revenu_reel': float(actual_income),
             'total_budget': float(total_budget),
             'total_actual': float(total_actual),
+            'current_budget_year': cur_year,
+            'current_budget_month': cur_month,
         })
 
     @action(detail=True, methods=['post'])

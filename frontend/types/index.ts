@@ -113,6 +113,7 @@ export interface Transaction {
     currency: string;
     is_active: boolean;
   } | null;
+  refund_budget?: number | null;
   is_recurring: boolean;
   recurrence_frequency?: string | null;
   recurrence_interval: number;
