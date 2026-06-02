@@ -1,286 +1,275 @@
 <template>
-  <div>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Review Mensuel</h1>
-        <p class="mt-1 text-gray-600 dark:text-gray-400">Bilan financier du mois sélectionné</p>
-      </div>
+  <div class="page-root fade-up">
 
-      <!-- Sélecteur mois/année -->
-      <div class="flex items-center gap-2">
-        <UButton
-          icon="i-heroicons-chevron-left"
-          color="gray"
-          variant="ghost"
-          size="sm"
-          aria-label="Mois précédent"
-          @click="prevMonth"
+    <!-- ── Header ──────────────────────────────────────────────── -->
+    <PageHeader title="Review Mensuel" subtitle="Bilan financier du mois sélectionné">
+      <template #actions>
+        <MonthNavigation
+          :model-value="{ year: selectedYear, month: selectedMonth }"
+          @update:model-value="({ year: y, month: m }) => { selectedYear.value = y; selectedMonth.value = m; loadData() }"
         />
-        <div class="text-base font-semibold text-gray-900 dark:text-white min-w-[140px] text-center">
-          {{ monthLabel }}
-        </div>
-        <UButton
-          icon="i-heroicons-chevron-right"
-          color="gray"
-          variant="ghost"
-          size="sm"
-          aria-label="Mois suivant"
-          :disabled="isCurrentMonth"
-          @click="nextMonth"
-        />
-      </div>
+      </template>
+    </PageHeader>
+
+    <!-- ── Loading ─────────────────────────────────────────────── -->
+    <div v-if="loading" class="loading-wrap">
+      <UIcon name="i-heroicons-arrow-path" class="spin" style="width:28px;height:28px;color:var(--ink-4);" />
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-16">
-      <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-gray-400" />
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="flex flex-col items-center py-16 gap-4">
-      <UIcon name="i-heroicons-exclamation-circle" class="h-12 w-12 text-red-400" />
-      <p class="text-gray-500">Impossible de charger les données</p>
-      <UButton size="sm" variant="soft" @click="loadData">Réessayer</UButton>
+    <!-- ── Error ───────────────────────────────────────────────── -->
+    <div v-else-if="error" class="error-wrap section-card">
+      <UIcon name="i-heroicons-exclamation-circle" style="width:40px;height:40px;color:var(--danger);" />
+      <p style="font-size:14px;color:var(--ink-3);margin:8px 0 0;">Impossible de charger les données</p>
+      <button class="ds-btn ds-btn-secondary" style="margin-top:12px;" @click="loadData">Réessayer</button>
     </div>
 
     <template v-else>
-      <!-- Cards ligne 1 : revenus, dépenses, net -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <UCard>
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <UIcon name="i-heroicons-arrow-trending-up" class="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Revenus</p>
-              <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ formatAmount(stats?.income.total ?? 0) }}</p>
-            </div>
-          </div>
-        </UCard>
 
-        <UCard>
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <UIcon name="i-heroicons-arrow-trending-down" class="h-5 w-5 text-red-600 dark:text-red-400" />
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Dépenses</p>
-              <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ formatAmount(stats?.expense.total ?? 0) }}</p>
-            </div>
-          </div>
-        </UCard>
+      <!-- ── Stat cards ligne 1 : revenus, dépenses, net ─────── -->
+      <div class="hero-grid">
 
-        <UCard>
-          <div class="flex items-center gap-3">
-            <div :class="['p-2 rounded-lg', net >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-orange-100 dark:bg-orange-900/30']">
-              <UIcon name="i-heroicons-scale" :class="['h-5 w-5', net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400']" />
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Net du mois</p>
-              <p :class="['text-xl font-bold', net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400']">
-                {{ net >= 0 ? '+' : '' }}{{ formatAmount(net) }}
-              </p>
-            </div>
+        <!-- Revenus -->
+        <div class="stat-card stat-card--income">
+          <div class="stat-label">
+            <UIcon name="i-heroicons-arrow-trending-up" style="width:14px;height:14px;" />
+            Revenus
           </div>
-        </UCard>
+          <div class="mono stat-amount" style="color:var(--success);">
+            {{ formatAmount(stats?.income.total ?? 0) }}
+          </div>
+          <div class="stat-count">{{ stats?.income.count ?? 0 }} transaction(s)</div>
+        </div>
+
+        <!-- Dépenses -->
+        <div class="stat-card stat-card--expense">
+          <div class="stat-label">
+            <UIcon name="i-heroicons-arrow-trending-down" style="width:14px;height:14px;" />
+            Dépenses
+          </div>
+          <div class="mono stat-amount" style="color:var(--danger);">
+            {{ formatAmount(stats?.expense.total ?? 0) }}
+          </div>
+          <div class="stat-count">{{ stats?.expense.count ?? 0 }} transaction(s)</div>
+        </div>
+
+        <!-- Net -->
+        <div class="stat-card" :class="net >= 0 ? 'stat-card--net-pos' : 'stat-card--net-neg'">
+          <div class="stat-label">
+            <UIcon name="i-heroicons-scale" style="width:14px;height:14px;" />
+            Net du mois
+          </div>
+          <div class="mono stat-amount" :style="{ color: net >= 0 ? 'var(--accent)' : '#f59e0b' }">
+            {{ net >= 0 ? '+' : '' }}{{ formatAmount(net) }}
+          </div>
+          <div class="stat-count">{{ net >= 0 ? 'Excédent' : 'Déficit' }}</div>
+        </div>
+
       </div>
 
-      <!-- Bannière épargne -->
-      <div v-if="net > 0" class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
-        <span class="text-2xl">💡</span>
+      <!-- ── Bannière épargne ─────────────────────────────────── -->
+      <div v-if="net > 0" class="savings-banner">
+        <span style="font-size:22px;line-height:1;flex-shrink:0;">💡</span>
         <div>
-          <p class="font-semibold text-green-800 dark:text-green-300">
-            Tu pourrais mettre {{ formatAmount(net) }} en épargne ce mois
-          </p>
-          <p class="text-sm text-green-700 dark:text-green-400 mt-1">
-            Soit {{ savingsRate }}% de tes revenus — félicitations !
-          </p>
+          <p class="savings-banner-title">Tu pourrais mettre {{ formatAmount(net) }} en épargne ce mois</p>
+          <p class="savings-banner-sub">Soit {{ savingsRate }}% de tes revenus — félicitations !</p>
         </div>
       </div>
 
-      <!-- Cards ligne 2 : moy/jour, nb transactions, vs mois précédent -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <UCard>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Dépenses / jour</p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ formatAmount(avgPerDay) }}</p>
-          <p class="text-xs text-gray-400 mt-1">sur {{ daysInMonth }} jours</p>
-        </UCard>
+      <!-- ── Mini-cards ligne 2 ──────────────────────────────── -->
+      <div class="mini-grid">
 
-        <UCard>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Transactions</p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ totalTransactions }}</p>
-          <p class="text-xs text-gray-400 mt-1">ce mois-ci</p>
-        </UCard>
+        <!-- Dépenses/jour -->
+        <div class="mini-card">
+          <div class="mini-label">Dépenses / jour</div>
+          <div class="mono mini-value">{{ formatAmount(avgPerDay) }}</div>
+          <div class="mini-sub">sur {{ daysInMonth }} jours</div>
+        </div>
 
-        <UCard>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">vs mois précédent</p>
+        <!-- Nb transactions -->
+        <div class="mini-card">
+          <div class="mini-label">Transactions</div>
+          <div class="mono mini-value">{{ totalTransactions }}</div>
+          <div class="mini-sub">ce mois-ci</div>
+        </div>
+
+        <!-- vs mois précédent -->
+        <div class="mini-card">
+          <div class="mini-label">vs mois précédent</div>
           <template v-if="prevStats">
-            <p :class="['text-lg font-bold', expenseChange >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400']">
+            <div
+              class="mono mini-value"
+              :style="{ color: expenseChange >= 0 ? 'var(--danger)' : 'var(--success)' }"
+            >
               {{ expenseChange >= 0 ? '+' : '' }}{{ expenseChange.toFixed(0) }}% dépenses
-            </p>
-            <p class="text-xs text-gray-400 mt-1">
-              {{ prevMonthLabel }}
-            </p>
+            </div>
+            <div class="mini-sub">{{ prevMonthLabel }}</div>
           </template>
-          <p v-else class="text-sm text-gray-400">Pas de données</p>
-        </UCard>
+          <div v-else class="mini-sub" style="margin-top:4px;">Pas de données</div>
+        </div>
+
       </div>
 
-      <!-- Évolution du solde net -->
-      <UCard class="mb-6">
-        <template #header>
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <UIcon name="i-heroicons-chart-bar" class="h-4 w-4 text-blue-500" />
-            Évolution du solde net
-          </h2>
-        </template>
-        <div v-if="balanceSeries.length === 0" class="py-8 text-center text-gray-400 text-sm">Aucune donnée</div>
-        <div v-else class="relative" style="height: 160px;">
-          <svg width="100%" height="160" viewBox="0 0 1000 160" preserveAspectRatio="none" class="overflow-visible">
+      <!-- ── Évolution du solde net ───────────────────────────── -->
+      <div class="section-card">
+        <div class="section-header" style="margin-bottom:12px;">
+          <div>
+            <div class="section-title">
+              <UIcon name="i-heroicons-chart-bar" style="width:15px;height:15px;color:var(--accent);vertical-align:middle;" />
+              Évolution du solde net
+            </div>
+            <div class="section-sub">Flux net cumulatif sur le mois (revenus − dépenses)</div>
+          </div>
+        </div>
+
+        <div v-if="balanceSeries.length === 0" class="empty-chart">Aucune donnée</div>
+        <div v-else class="chart-wrap">
+          <svg width="100%" height="160" viewBox="0 0 1000 160" preserveAspectRatio="none" style="overflow:visible;">
             <defs>
               <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02"/>
+                <stop offset="0%" stop-color="var(--primary-500)" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="var(--primary-500)" stop-opacity="0.02"/>
               </linearGradient>
             </defs>
-            <g>
-              <!-- Ligne zéro -->
-              <line :x1="30" :x2="970" :y1="zeroY()" :y2="zeroY()" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="6,4" />
-              <!-- Aire sous la courbe -->
-              <path :d="areaPath()" fill="url(#balanceGrad)" />
-              <!-- Courbe -->
-              <polyline :points="linePoints()" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-              <!-- Point final -->
-              <circle
-                v-if="balanceSeries.length"
-                :cx="xVB(balanceSeries[balanceSeries.length - 1].day)"
-                :cy="yPx(balanceSeries[balanceSeries.length - 1].value)"
-                r="5"
-                :fill="balanceSeries[balanceSeries.length - 1].value >= 0 ? '#3b82f6' : '#ef4444'"
-                stroke="white" stroke-width="2.5"
-              />
-            </g>
+            <!-- Ligne zéro -->
+            <line :x1="30" :x2="970" :y1="zeroY()" :y2="zeroY()" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="6,4" />
+            <!-- Aire -->
+            <path :d="areaPath()" fill="url(#balanceGrad)" />
+            <!-- Courbe -->
+            <polyline :points="linePoints()" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+            <!-- Point final -->
+            <circle
+              v-if="balanceSeries.length"
+              :cx="xVB(balanceSeries[balanceSeries.length - 1].day)"
+              :cy="yPx(balanceSeries[balanceSeries.length - 1].value)"
+              r="5"
+              :fill="balanceSeries[balanceSeries.length - 1].value >= 0 ? 'var(--accent)' : 'var(--danger)'"
+              stroke="var(--surface)" stroke-width="2.5"
+            />
           </svg>
-          <!-- Labels en overlay HTML (évite la distortion du viewBox) -->
-          <div class="absolute inset-0 pointer-events-none flex flex-col justify-between text-xs text-gray-400 py-1 pl-1">
+          <!-- Labels min/max en overlay -->
+          <div class="chart-labels-y">
             <span>{{ formatShort(seriesMax) }}</span>
             <span>{{ formatShort(seriesMin) }}</span>
           </div>
+          <!-- Valeur finale flottante -->
           <div
-            class="absolute right-2 text-xs font-semibold pointer-events-none"
-            :style="{ top: (yPx(balanceSeries[balanceSeries.length - 1].value) / 160 * 100) + '%', transform: 'translateY(-150%)' }"
-            :class="balanceSeries[balanceSeries.length - 1].value >= 0 ? 'text-blue-500' : 'text-red-500'"
+            class="mono chart-final-label"
+            :style="{
+              top: (yPx(balanceSeries[balanceSeries.length - 1].value) / 160 * 100) + '%',
+              color: balanceSeries[balanceSeries.length - 1].value >= 0 ? 'var(--accent)' : 'var(--danger)',
+            }"
           >
             {{ formatShort(balanceSeries[balanceSeries.length - 1].value) }}
           </div>
         </div>
-        <!-- Axe des dates -->
-        <div class="relative mt-1 text-xs text-gray-400">
-          <span class="absolute left-0">1</span>
-          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth / 4)) + '%' }">{{ Math.ceil(daysInMonth / 4) }}</span>
-          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth / 2)) + '%' }">{{ Math.ceil(daysInMonth / 2) }}</span>
-          <span class="absolute" :style="{ left: xPct(Math.ceil(daysInMonth * 3 / 4)) + '%' }">{{ Math.ceil(daysInMonth * 3 / 4) }}</span>
-          <span class="absolute right-0">{{ daysInMonth }}</span>
-        </div>
-        <p class="text-xs text-gray-400 mt-4 text-center">Flux net cumulatif sur le mois (revenus − dépenses)</p>
-      </UCard>
 
-      <!-- État des budgets -->
-      <UCard v-if="budgetData.length > 0" class="mb-6">
-        <template #header>
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <UIcon name="i-heroicons-chart-bar-square" class="h-4 w-4 text-purple-500" />
-            État des budgets
-          </h2>
-        </template>
-        <div class="space-y-3">
-          <div v-for="(b, i) in budgetData" :key="i" class="space-y-1">
-            <div class="flex items-center justify-between text-sm">
-              <span class="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 truncate max-w-[55%]">
+        <!-- Axe des dates -->
+        <div class="chart-axis-x">
+          <span style="position:absolute;left:0;">1</span>
+          <span style="position:absolute;" :style="{ left: xPct(Math.ceil(daysInMonth / 4)) + '%' }">{{ Math.ceil(daysInMonth / 4) }}</span>
+          <span style="position:absolute;" :style="{ left: xPct(Math.ceil(daysInMonth / 2)) + '%' }">{{ Math.ceil(daysInMonth / 2) }}</span>
+          <span style="position:absolute;" :style="{ left: xPct(Math.ceil(daysInMonth * 3 / 4)) + '%' }">{{ Math.ceil(daysInMonth * 3 / 4) }}</span>
+          <span style="position:absolute;right:0;">{{ daysInMonth }}</span>
+        </div>
+      </div>
+
+      <!-- ── État des budgets ─────────────────────────────────── -->
+      <div v-if="budgetData.length > 0" class="section-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <UIcon name="i-heroicons-chart-bar-square" style="width:15px;height:15px;color:#a855f7;vertical-align:middle;" />
+              État des budgets
+            </div>
+          </div>
+        </div>
+        <div class="budget-list">
+          <div v-for="(b, i) in budgetData" :key="i" class="budget-row">
+            <div class="budget-row-top">
+              <div class="budget-row-name">
                 <UIcon
                   :name="b.is_over ? 'i-heroicons-exclamation-circle' : 'i-heroicons-check-circle'"
-                  :class="b.is_over ? 'text-red-500' : 'text-green-500'"
-                  class="h-4 w-4 flex-shrink-0"
+                  :style="{ color: b.is_over ? 'var(--danger)' : 'var(--success)' }"
+                  style="width:14px;height:14px;flex-shrink:0;"
                 />
-                {{ b.category_name }}
-                <UBadge v-if="b.unbudgeted" color="gray" variant="subtle" size="xs">hors budget</UBadge>
-              </span>
-              <span class="text-gray-600 dark:text-gray-400 text-right">
-                <span :class="b.is_over ? 'text-red-600 font-semibold' : 'text-gray-700 dark:text-gray-300'">
+                <span>{{ b.category_name }}</span>
+                <span v-if="b.unbudgeted" class="ds-badge ds-badge-neutral" style="font-size:10px;">hors budget</span>
+              </div>
+              <div class="budget-row-amounts mono">
+                <span :style="{ color: b.is_over ? 'var(--danger)' : 'var(--ink)', fontWeight: b.is_over ? 600 : 400 }">
                   {{ formatAmount(b.reel) }}
                 </span>
-                <span v-if="b.prevu > 0" class="text-gray-400"> / {{ formatAmount(b.prevu) }}</span>
-              </span>
+                <span v-if="b.prevu > 0" style="color:var(--ink-4);"> / {{ formatAmount(b.prevu) }}</span>
+              </div>
             </div>
-            <div v-if="b.prevu > 0" class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+            <div v-if="b.prevu > 0" class="ds-progress" style="margin-top:6px;">
               <div
-                class="h-1.5 rounded-full transition-all"
-                :class="b.is_over ? 'bg-red-500' : (b.reel / b.prevu > 0.8 ? 'bg-orange-400' : 'bg-green-500')"
+                class="ds-progress-bar"
+                :class="b.is_over ? 'over' : (b.reel / b.prevu > 0.8 ? 'warn' : '')"
                 :style="{ width: Math.min(100, b.prevu > 0 ? (b.reel / b.prevu * 100) : 0) + '%' }"
               />
             </div>
           </div>
         </div>
-      </UCard>
+      </div>
 
-      <!-- Top dépenses par catégorie -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <UCard>
-          <template #header>
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <UIcon name="i-heroicons-arrow-trending-down" class="h-4 w-4 text-red-500" />
+      <!-- ── Top dépenses + Top revenus ─────────────────────── -->
+      <div class="top-grid">
+
+        <!-- Top dépenses -->
+        <div class="section-card">
+          <div class="section-header" style="margin-bottom:14px;">
+            <div class="section-title">
+              <UIcon name="i-heroicons-arrow-trending-down" style="width:14px;height:14px;color:var(--danger);vertical-align:middle;" />
               Top dépenses
-            </h2>
-          </template>
-
-          <div v-if="topExpenses.length === 0" class="py-4 text-center text-gray-400 text-sm">
-            Aucune dépense ce mois
+            </div>
           </div>
-          <div v-else class="space-y-3">
-            <div v-for="cat in topExpenses" :key="cat.category_id" class="space-y-1">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-medium text-gray-700 dark:text-gray-300 truncate max-w-[60%]">{{ cat.category_name }}</span>
-                <span class="text-gray-600 dark:text-gray-400">{{ formatAmount(cat.total) }} ({{ categoryPercent(cat.total, 'expense') }}%)</span>
+          <div v-if="topExpenses.length === 0" class="empty-chart">Aucune dépense ce mois</div>
+          <div v-else class="top-list">
+            <div v-for="cat in topExpenses" :key="cat.category_id" class="top-row">
+              <div class="top-row-head">
+                <span class="top-row-name">{{ cat.category_name }}</span>
+                <span class="mono top-row-amount">{{ formatAmount(cat.total) }} <span style="color:var(--ink-4);">({{ categoryPercent(cat.total, 'expense') }}%)</span></span>
               </div>
-              <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+              <div class="ds-progress">
                 <div
-                  class="h-2 rounded-full bg-red-400 dark:bg-red-500 transition-all"
+                  class="ds-progress-bar"
+                  style="background:var(--danger);"
                   :style="{ width: categoryPercent(cat.total, 'expense') + '%' }"
                 />
               </div>
             </div>
           </div>
-        </UCard>
+        </div>
 
-        <!-- Top revenus par catégorie -->
-        <UCard>
-          <template #header>
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <UIcon name="i-heroicons-arrow-trending-up" class="h-4 w-4 text-green-500" />
+        <!-- Top revenus -->
+        <div class="section-card">
+          <div class="section-header" style="margin-bottom:14px;">
+            <div class="section-title">
+              <UIcon name="i-heroicons-arrow-trending-up" style="width:14px;height:14px;color:var(--success);vertical-align:middle;" />
               Top revenus
-            </h2>
-          </template>
-
-          <div v-if="topIncomes.length === 0" class="py-4 text-center text-gray-400 text-sm">
-            Aucun revenu ce mois
+            </div>
           </div>
-          <div v-else class="space-y-3">
-            <div v-for="cat in topIncomes" :key="cat.category_id" class="space-y-1">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-medium text-gray-700 dark:text-gray-300 truncate max-w-[60%]">{{ cat.category_name }}</span>
-                <span class="text-gray-600 dark:text-gray-400">{{ formatAmount(cat.total) }} ({{ categoryPercent(cat.total, 'income') }}%)</span>
+          <div v-if="topIncomes.length === 0" class="empty-chart">Aucun revenu ce mois</div>
+          <div v-else class="top-list">
+            <div v-for="cat in topIncomes" :key="cat.category_id" class="top-row">
+              <div class="top-row-head">
+                <span class="top-row-name">{{ cat.category_name }}</span>
+                <span class="mono top-row-amount">{{ formatAmount(cat.total) }} <span style="color:var(--ink-4);">({{ categoryPercent(cat.total, 'income') }}%)</span></span>
               </div>
-              <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+              <div class="ds-progress">
                 <div
-                  class="h-2 rounded-full bg-green-400 dark:bg-green-500 transition-all"
+                  class="ds-progress-bar"
+                  style="background:var(--success);"
                   :style="{ width: categoryPercent(cat.total, 'income') + '%' }"
                 />
               </div>
             </div>
           </div>
-        </UCard>
+        </div>
+
       </div>
+
     </template>
   </div>
 </template>
@@ -476,3 +465,243 @@ onMounted(async () => {
   await loadData()
 })
 </script>
+
+<style scoped>
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .4s cubic-bezier(.2,.7,.2,1) both; }
+
+/* ── Root ── */
+.page-root {
+  padding: 16px 16px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .page-root { padding: 20px 24px 40px; gap: 18px; }
+}
+
+/* ── States ── */
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+.error-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+/* ── Hero grid ── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 480px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 768px) { .hero-grid { grid-template-columns: 1fr 1fr 1fr; gap: 14px; } }
+
+/* ── Stat cards ── */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+@media (min-width: 640px) { .stat-card { padding: 20px 24px; } }
+
+.stat-card--income { border-color: color-mix(in oklab, var(--success) 25%, var(--line)); }
+.stat-card--expense { border-color: color-mix(in oklab, var(--danger) 25%, var(--line)); }
+.stat-card--net-pos { border-color: color-mix(in oklab, var(--accent) 25%, var(--line)); }
+.stat-card--net-neg { border-color: color-mix(in oklab, #f59e0b 30%, var(--line)); }
+
+.stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.stat-amount {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+@media (min-width: 640px) { .stat-amount { font-size: 26px; } }
+.stat-count { font-size: 12px; color: var(--ink-4); margin-top: 4px; }
+
+/* ── Savings banner ── */
+.savings-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--success-soft);
+  border: 1px solid color-mix(in oklab, var(--success) 30%, transparent);
+  border-radius: var(--radius-lg);
+}
+.savings-banner-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--success);
+  margin: 0;
+}
+.savings-banner-sub { font-size: 13px; color: var(--success); margin: 4px 0 0; opacity: 0.8; }
+
+/* ── Mini grid ── */
+.mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (min-width: 640px) { .mini-grid { grid-template-columns: 1fr 1fr 1fr; gap: 14px; } }
+
+.mini-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.mini-label { font-size: 11.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+.mini-value { font-size: 18px; font-weight: 500; color: var(--ink); margin-top: 6px; letter-spacing: -0.3px; }
+.mini-sub { font-size: 11px; color: var(--ink-4); margin-top: 3px; }
+
+/* ── Section cards ── */
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+@media (min-width: 640px) { .section-card { padding: 20px 24px; } }
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.section-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+
+/* ── SVG chart ── */
+.chart-wrap {
+  position: relative;
+  height: 160px;
+}
+.chart-labels-y {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  padding: 2px 0 2px 2px;
+}
+.chart-final-label {
+  position: absolute;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translateY(-150%);
+}
+.chart-axis-x {
+  position: relative;
+  margin-top: 6px;
+  height: 14px;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+}
+.empty-chart {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-4);
+}
+
+/* ── Budget list ── */
+.budget-list { display: flex; flex-direction: column; gap: 12px; }
+.budget-row { }
+.budget-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.budget-row-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+}
+.budget-row-name span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.budget-row-amounts { font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+/* Custom warn bar (not in global DS) */
+.ds-progress-bar.warn { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+
+/* ── Top grid ── */
+.top-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 768px) { .top-grid { grid-template-columns: 1fr 1fr; } }
+
+.top-list { display: flex; flex-direction: column; gap: 14px; }
+.top-row { }
+.top-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.top-row-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.top-row-amount { font-size: 12.5px; color: var(--ink); white-space: nowrap; flex-shrink: 0; }
+</style>

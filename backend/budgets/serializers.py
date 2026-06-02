@@ -204,10 +204,11 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavingsGoal
         fields = [
-            'id', 'user', 'label', 'target_amount', 'product_url',
-            'product_image_url', 'target_date', 'saving_amount',
+            'id', 'user', 'label', 'target_amount', 'current_amount',
+            'product_url', 'product_image_url', 'target_date', 'saving_amount',
             'saving_frequency', 'saving_frequency_display', 'status',
-            'status_display', 'calculated_result', 'linked_budgets',
+            'status_display', 'color', 'icon', 'note', 'priority',
+            'calculated_result', 'linked_budgets',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -280,6 +281,7 @@ class SavingsGoalListSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavingsGoal
         fields = [
-            'id', 'label', 'target_amount', 'target_date', 'saving_amount',
-            'saving_frequency', 'status', 'status_display', 'created_at'
+            'id', 'label', 'target_amount', 'current_amount', 'target_date',
+            'saving_amount', 'saving_frequency', 'status', 'status_display',
+            'color', 'icon', 'note', 'priority', 'created_at'
         ]

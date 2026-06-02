@@ -150,6 +150,16 @@ export const useBudgets = () => {
     }
   }
 
+  const resetAllBudgets = async (): Promise<{ success: boolean; error?: StandardError }> => {
+    try {
+      await apiFetch('/api/v1/budgets/reset_all/', { method: 'DELETE' })
+      return { success: true }
+    } catch (error) {
+      const standardError = handleError(error, { showToast: false })
+      return { success: false, error: standardError }
+    }
+  }
+
   return {
     getBudgets,
     getBudget,
@@ -158,6 +168,7 @@ export const useBudgets = () => {
     deleteBudget,
     getBudgetsSummary,
     getDashboardData,
-    toggleBudgetActive
+    toggleBudgetActive,
+    resetAllBudgets
   }
 }

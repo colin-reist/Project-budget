@@ -1,8 +1,31 @@
 export interface UserProfile {
   id: number
+  // User model projections (read-only from API)
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  date_joined: string
+  last_login: string | null
+  // Financial
   monthly_income: number
   currency: 'CHF' | 'EUR' | 'USD' | 'GBP'
   salary_day: number | null
+  // Personal info
+  phone: string
+  birth_date: string | null
+  // Locale preferences
+  language: string
+  timezone_pref: string
+  city: string
+  country: string
+  // Budget preferences
+  budget_start_day: number
+  budget_rollover: boolean
+  budget_roundup: boolean
+  budget_roundup_amount: string
+  show_cents: boolean
+  // Meta
   created_at: string
   updated_at: string
   available_budget_info?: {
@@ -107,11 +130,24 @@ export const useUserProfile = () => {
   /**
    * Update current user's profile and refresh global state
    */
-  const updateProfile = async (profileData: {
-    monthly_income?: number | string
-    currency?: string
-    salary_day?: number | null
-  }): Promise<{ data: any | null; success: boolean; error?: any }> => {
+  const updateProfile = async (profileData: Partial<{
+    monthly_income: number | string
+    currency: string
+    salary_day: number | null
+    first_name: string
+    last_name: string
+    phone: string
+    birth_date: string | null
+    language: string
+    timezone_pref: string
+    city: string
+    country: string
+    budget_start_day: number
+    budget_rollover: boolean
+    budget_roundup: boolean
+    budget_roundup_amount: string | number
+    show_cents: boolean
+  }>): Promise<{ data: any | null; success: boolean; error?: any }> => {
     try {
       const data = await apiFetch('/api/v1/auth/profile/update/', {
         method: 'PATCH',
@@ -164,6 +200,17 @@ export const useUserProfile = () => {
     }
   }
 
+  const resetProfile = async (): Promise<{ success: boolean; error?: any }> => {
+    try {
+      await apiFetch('/api/v1/auth/profile/reset_profile/', { method: 'POST' })
+      userProfile.value = null
+      isProfileLoaded.value = false
+      return { success: true }
+    } catch (error) {
+      return { success: false, error }
+    }
+  }
+
   return {
     userProfile,
     currency,
@@ -172,6 +219,7 @@ export const useUserProfile = () => {
     getProfile,
     updateProfile,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    resetProfile
   }
 }

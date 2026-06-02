@@ -1,6 +1,6 @@
 import { watch, onUnmounted } from 'vue';
 
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000; // 24h (temporairement désactivé)
 const WARNING_DURATION = 60; // seconds
 
 export const useSessionTimeout = () => {
@@ -103,9 +103,7 @@ export const useSessionTimeout = () => {
 
   const start = () => {
     if (!import.meta.client) return;
-    ACTIVITY_EVENTS.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    resetInactivityTimer();
+    // Session timeout temporarily disabled — only keep token refresh
     startTokenRefresh();
   };
 

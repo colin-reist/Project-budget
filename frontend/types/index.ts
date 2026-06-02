@@ -200,6 +200,7 @@ export interface SavingsGoal {
   id: number;
   label: string;
   target_amount: string;
+  current_amount: string;
   product_url?: string | null;
   product_image_url?: string | null;
   target_date?: string | null;
@@ -208,6 +209,10 @@ export interface SavingsGoal {
   saving_frequency_display?: string;
   status: 'active' | 'reached' | 'cancelled';
   status_display?: string;
+  color: string;
+  icon: string;
+  note: string;
+  priority: number;
   calculated_result?: {
     mode: 'date_calculated' | 'amount_calculated';
     target_date?: string;

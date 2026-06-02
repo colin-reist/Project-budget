@@ -388,3 +388,16 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Account deleted successfully.'
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def reset_profile(self, request):
+        """
+        Remet à zéro le revenu mensuel du profil utilisateur.
+
+        POST /api/v1/auth/profile/reset_profile/
+        """
+        profile = self.get_object()
+        profile.monthly_income = 0
+        profile.save()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)

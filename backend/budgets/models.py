@@ -388,6 +388,32 @@ class SavingsGoal(models.Model):
         default='active',
         verbose_name='Statut'
     )
+    current_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name='Montant épargné'
+    )
+    color = models.CharField(
+        max_length=20,
+        default='#2563eb',
+        verbose_name='Couleur'
+    )
+    icon = models.CharField(
+        max_length=50,
+        default='banknotes',
+        verbose_name='Icône'
+    )
+    note = models.CharField(
+        max_length=300,
+        blank=True,
+        default='',
+        verbose_name='Note'
+    )
+    priority = models.IntegerField(
+        default=0,
+        verbose_name='Priorité'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

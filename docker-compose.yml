@@ -62,16 +62,18 @@ services:
     working_dir: /app
     environment:
       - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     volumes:
-      - ./frontend/.output:/app/.output:ro
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     depends_on:
       - backend
     networks:
       - budget_network
-    command: node .output/server/index.mjs
+    command: sh -c "npm install && npm run dev"
 
   # Nginx (reverse proxy - optionnel, décommenter si nécessaire)
   # nginx:

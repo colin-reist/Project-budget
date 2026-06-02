@@ -1,349 +1,421 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex">
-            <!-- Logo -->
-            <div class="flex-shrink-0 flex items-center">
-              <NuxtLink to="/" class="text-xl font-bold text-primary-600">
-                Budget Tracker
-              </NuxtLink>
-            </div>
+  <div class="app-shell" :class="colorMode.value === 'dark' ? 'dark' : ''">
 
-            <!-- Navigation Links - Reorganized for better UX -->
-            <div v-if="isAuthenticated" class="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <!-- Main navigation -->
-              <NuxtLink
-                to="/"
-                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <UIcon name="i-heroicons-home" class="h-4 w-4" />
-                Dashboard
-              </NuxtLink>
-              <NuxtLink
-                to="/transactions"
-                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <UIcon name="i-heroicons-arrows-right-left" class="h-4 w-4" />
-                Transactions
-              </NuxtLink>
-              <NuxtLink
-                to="/accounts"
-                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <UIcon name="i-heroicons-building-library" class="h-4 w-4" />
-                Comptes
-              </NuxtLink>
-              <NuxtLink
-                to="/tools/savings-goal"
-                class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium"
-                active-class="border-primary-500 text-gray-900 dark:text-white"
-                inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <UIcon name="i-heroicons-banknotes" class="h-4 w-4" />
-                Épargne
-              </NuxtLink>
-
-              <!-- Analyses Dropdown -->
-              <UDropdown :items="analysesMenuItems" :popper="{ placement: 'bottom-start' }">
-                <button
-                  class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  <UIcon name="i-heroicons-chart-bar-square" class="h-4 w-4" />
-                  Analyses
-                  <UIcon name="i-heroicons-chevron-down" class="h-3 w-3" />
-                </button>
-              </UDropdown>
-
-              <!-- Configuration Dropdown -->
-              <UDropdown :items="configMenuItems" :popper="{ placement: 'bottom-start' }">
-                <button
-                  class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  <UIcon name="i-heroicons-cog-6-tooth" class="h-4 w-4" />
-                  Configuration
-                  <UIcon name="i-heroicons-chevron-down" class="h-3 w-3" />
-                </button>
-              </UDropdown>
-            </div>
-          </div>
-
-          <!-- User Menu -->
-          <div v-if="isAuthenticated" class="flex items-center gap-3">
-            <!-- Keyboard Shortcuts Help Button -->
-            <UTooltip text="Raccourcis clavier (appuyez sur ?)">
-              <UButton
-                icon="i-heroicons-command-line"
-                color="gray"
-                variant="ghost"
-                aria-label="Voir les raccourcis clavier"
-                class="hidden sm:inline-flex"
-                @click="showShortcutsHelp = true"
-              />
-            </UTooltip>
-
-            <!-- Theme Toggle Button -->
-            <UTooltip :text="isDark ? 'Mode clair' : 'Mode sombre'">
-              <UButton
-                :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
-                color="gray"
-                variant="ghost"
-                aria-label="Changer le thème"
-                @click="toggleTheme"
-              />
-            </UTooltip>
-
-            <UDropdown :items="userMenuItems" :popper="{ placement: 'bottom-end' }">
-              <UButton
-                color="white"
-                :label="user?.username || 'User'"
-                trailing-icon="i-heroicons-chevron-down-20-solid"
-                class="hidden sm:inline-flex"
-              />
-            </UDropdown>
-
-            <!-- Mobile hamburger - Improved touch target -->
-            <UButton
-              icon="i-heroicons-bars-3"
-              color="gray"
-              variant="ghost"
-              size="lg"
-              class="sm:hidden btn-touch-target"
-              aria-label="Ouvrir le menu"
-              @click="mobileMenuOpen = true"
-            />
-          </div>
+    <!-- ── Sidebar (desktop ≥1024px) ─────────────────────────────── -->
+    <aside v-if="isAuthenticated" class="sidebar">
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <UIcon name="i-heroicons-banknotes" style="width:17px;height:17px;color:#fff;" />
+        </div>
+        <div>
+          <div class="sidebar-app-name">Budget Tracker</div>
+          <div class="sidebar-app-version mono">v{{ appVersion }}</div>
         </div>
       </div>
-    </nav>
 
-    <!-- Mobile menu slideover -->
-    <USlideover v-model="mobileMenuOpen" side="right">
-      <div class="p-4 space-y-1">
-        <div class="flex items-center justify-between mb-4">
-          <span class="text-lg font-bold text-primary-600">Menu</span>
-          <UButton
-            icon="i-heroicons-x-mark"
-            color="gray"
-            variant="ghost"
-            aria-label="Fermer le menu"
-            @click="mobileMenuOpen = false"
-          />
-        </div>
-
-        <div v-if="user" class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.username }}</p>
-          <p class="text-xs text-gray-500">{{ user.email }}</p>
-        </div>
-
-        <NuxtLink
-          v-for="link in navLinks"
-          :key="link.to"
-          :to="link.to"
-          class="menu-item-mobile rounded-md font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          active-class="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
-          @click="mobileMenuOpen = false"
-        >
-          <UIcon :name="link.icon" class="h-6 w-6" />
-          {{ link.label }}
-        </NuxtLink>
-
-        <div class="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700 space-y-1">
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+        <template v-for="(group, gi) in navGroups" :key="group.label">
+          <div class="sidebar-group-label" :style="{ paddingTop: gi === 0 ? '4px' : '16px' }">
+            {{ group.label }}
+          </div>
           <NuxtLink
-            to="/profile"
-            class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            @click="mobileMenuOpen = false"
+            v-for="item in group.items"
+            :key="item.to"
+            :to="item.to"
+            class="sidebar-item"
+            :class="{ 'sidebar-item--active': isActive(item) }"
           >
-            <UIcon name="i-heroicons-user-circle" class="h-5 w-5" />
-            Profil
+            <UIcon :name="item.icon" class="sidebar-item-icon" />
+            <span>{{ item.label }}</span>
           </NuxtLink>
-          <NuxtLink
-            to="/settings"
-            class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            @click="mobileMenuOpen = false"
-          >
-            <UIcon name="i-heroicons-cog-6-tooth" class="h-5 w-5" />
-            Paramètres
-          </NuxtLink>
-          <button
-            class="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-            @click="mobileMenuOpen = false; logout()"
-          >
-            <UIcon name="i-heroicons-arrow-right-on-rectangle" class="h-5 w-5" />
-            Déconnexion
+        </template>
+      </nav>
+
+      <!-- User + theme -->
+      <div class="sidebar-footer">
+        <button class="sidebar-theme-btn" @click="toggleTheme">
+          <UIcon :name="isDark ? 'i-heroicons-sun' : 'i-heroicons-moon'" style="width:15px;height:15px;" />
+          <span>{{ isDark ? 'Mode clair' : 'Mode sombre' }}</span>
+        </button>
+        <UDropdown :items="userMenuItems" :popper="{ placement: 'top-start' }">
+          <button class="sidebar-user">
+            <div class="sidebar-user-avatar">{{ userInitial }}</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name">{{ user?.username }}</div>
+              <div class="sidebar-user-email">{{ user?.email }}</div>
+            </div>
+            <UIcon name="i-heroicons-ellipsis-vertical" style="width:14px;height:14px;color:var(--ink-4);flex-shrink:0;" />
           </button>
+        </UDropdown>
+      </div>
+    </aside>
+
+    <!-- ── Main area ──────────────────────────────────────────────── -->
+    <div class="main-area">
+
+      <!-- Mobile top bar -->
+      <div v-if="isAuthenticated" class="mobile-topbar">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="sidebar-logo-icon" style="width:26px;height:26px;border-radius:7px;">
+            <UIcon name="i-heroicons-banknotes" style="width:14px;height:14px;color:#fff;" />
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--ink);">Budget Tracker</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="ds-btn-icon" @click="toggleTheme">
+            <UIcon :name="isDark ? 'i-heroicons-sun' : 'i-heroicons-moon'" style="width:16px;height:16px;" />
+          </button>
+          <button class="ds-btn-icon" @click="mobileMenuOpen = true">
+            <UIcon name="i-heroicons-bars-3" style="width:16px;height:16px;" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Page content -->
+      <main class="page-content">
+        <slot />
+      </main>
+    </div>
+
+    <!-- ── Mobile slideover ───────────────────────────────────────── -->
+    <USlideover v-model="mobileMenuOpen" side="right">
+      <div class="p-4">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <span style="font-size:15px;font-weight:600;color:var(--ink);">Menu</span>
+          <button class="ds-btn-icon" @click="mobileMenuOpen = false">
+            <UIcon name="i-heroicons-x-mark" style="width:16px;height:16px;" />
+          </button>
+        </div>
+
+        <div v-if="user" style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);">
+          <p style="font-size:13px;font-weight:500;color:var(--ink);margin:0;">{{ user.username }}</p>
+          <p style="font-size:11px;color:var(--ink-3);margin:2px 0 0;">{{ user.email }}</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <template v-for="group in navGroups" :key="group.label">
+            <p style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;font-weight:500;color:var(--ink-4);margin:12px 0 4px 4px;">
+              {{ group.label }}
+            </p>
+            <NuxtLink
+              v-for="item in group.items"
+              :key="item.to"
+              :to="item.to"
+              class="mobile-menu-item"
+              :class="{ 'mobile-menu-item--active': isActive(item) }"
+              @click="mobileMenuOpen = false"
+            >
+              <UIcon :name="item.icon" style="width:17px;height:17px;flex-shrink:0;" />
+              {{ item.label }}
+            </NuxtLink>
+          </template>
+
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+            <NuxtLink to="/settings" class="mobile-menu-item" @click="mobileMenuOpen = false">
+              <UIcon name="i-heroicons-user-circle" style="width:17px;height:17px;flex-shrink:0;" />
+              Profil &amp; paramètres
+            </NuxtLink>
+            <button class="mobile-menu-item" @click="toggleTheme">
+              <UIcon :name="isDark ? 'i-heroicons-sun' : 'i-heroicons-moon'" style="width:17px;height:17px;flex-shrink:0;" />
+              {{ isDark ? 'Mode clair' : 'Mode sombre' }}
+            </button>
+            <button class="mobile-menu-item" style="color:var(--danger);" @click="mobileMenuOpen = false; logout()">
+              <UIcon name="i-heroicons-arrow-right-on-rectangle" style="width:17px;height:17px;flex-shrink:0;" />
+              Déconnexion
+            </button>
+          </div>
         </div>
       </div>
     </USlideover>
 
-    <!-- Main Content - Improved spacing -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8">
-      <slot />
-    </main>
-
-    <!-- Footer - Desktop only -->
-    <div v-if="isAuthenticated" class="hidden sm:block">
-      <AppFooter />
-    </div>
-
-    <!-- Bottom Navigation (Mobile only) - Improved touch targets -->
-    <nav v-if="isAuthenticated" class="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40 safe-area-bottom">
-      <div class="grid grid-cols-5 h-20">
-        <NuxtLink
-          v-for="link in bottomNavLinks"
-          :key="link.to"
-          :to="link.to"
-          class="bottom-nav-item text-xs font-medium transition-colors"
-          active-class="text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20"
-          inactive-class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50"
-        >
-          <UIcon :name="link.icon" class="h-7 w-7 mb-1" />
-          <span class="text-[10px] sm:text-xs">{{ link.label }}</span>
-        </NuxtLink>
-      </div>
+    <!-- ── Mobile bottom nav ──────────────────────────────────────── -->
+    <nav v-if="isAuthenticated" class="bottom-nav">
+      <NuxtLink
+        v-for="link in bottomNavLinks"
+        :key="link.to"
+        :to="link.to"
+        class="bottom-nav-item"
+        :class="{ 'bottom-nav-item--active': isActive(link) }"
+      >
+        <UIcon :name="link.icon" style="width:22px;height:22px;" />
+        <span class="bottom-nav-label">{{ link.label }}</span>
+      </NuxtLink>
     </nav>
 
-    <!-- Keyboard Shortcuts Help Modal -->
+    <!-- ── Modals ─────────────────────────────────────────────────── -->
     <KeyboardShortcutHelp v-model="showShortcutsHelp" />
-
-    <!-- Session Timeout Warning Modal -->
     <SessionTimeoutModal />
   </div>
 </template>
 
 <script setup lang="ts">
-const { user, isAuthenticated, logout } = useAuth();
-const { registerShortcut } = useKeyboardShortcuts();
-const { generateRecurring } = useTransactions();
-useSessionTimeout();
+const { user, isAuthenticated, logout } = useAuth()
+const { registerShortcut } = useKeyboardShortcuts()
+const { generateRecurring } = useTransactions()
+const config = useRuntimeConfig()
+useSessionTimeout()
 
-// Mobile menu
-const mobileMenuOpen = ref(false);
+const route = useRoute()
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+const appVersion = config.public.appVersion
 
-// Keyboard shortcuts help
-const showShortcutsHelp = ref(false);
+const mobileMenuOpen = ref(false)
+const showShortcutsHelp = ref(false)
 
-// Navigation links for mobile slideover (all links)
-const navLinks = [
-  { to: '/', label: 'Dashboard', icon: 'i-heroicons-home' },
-  { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
-  { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
-  { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
-  { to: '/tools/monthly-wrap', label: 'Review Mensuel', icon: 'i-heroicons-calendar' },
-  { to: '/tools/annual-wrap', label: 'Bilan Annuel', icon: 'i-heroicons-chart-bar-square' },
-  { to: '/categories', label: 'Catégories', icon: 'i-heroicons-tag' },
-  { to: '/budgets', label: 'Budgets', icon: 'i-heroicons-chart-bar' },
-  { to: '/recurring', label: 'Récurrents', icon: 'i-heroicons-arrow-path' },
-];
-
-// Bottom navigation links for mobile (main actions only)
-const bottomNavLinks = [
-  { to: '/', label: 'Accueil', icon: 'i-heroicons-home' },
-  { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
-  { to: '/accounts', label: 'Comptes', icon: 'i-heroicons-building-library' },
-  { to: '/tools/savings-goal', label: 'Épargne', icon: 'i-heroicons-banknotes' },
-  { to: '/profile', label: 'Plus', icon: 'i-heroicons-ellipsis-horizontal-circle' },
-];
-
-// Analyses dropdown menu items
-const analysesMenuItems = [
-  [
-    {
-      label: 'Review Mensuel',
-      icon: 'i-heroicons-calendar',
-      click: () => navigateTo('/tools/monthly-wrap'),
-    },
-    {
-      label: 'Bilan Annuel',
-      icon: 'i-heroicons-chart-bar-square',
-      click: () => navigateTo('/tools/annual-wrap'),
-    },
-  ],
-];
-
-// Configuration dropdown menu items
-const configMenuItems = [
-  [
-    {
-      label: 'Catégories',
-      icon: 'i-heroicons-tag',
-      click: () => navigateTo('/categories'),
-    },
-    {
-      label: 'Budgets',
-      icon: 'i-heroicons-chart-bar',
-      click: () => navigateTo('/budgets'),
-    },
-    {
-      label: 'Récurrents',
-      icon: 'i-heroicons-arrow-path',
-      click: () => navigateTo('/recurring'),
-    },
-  ],
-];
-
-// Theme management
-const colorMode = useColorMode();
-const isDark = computed({
-  get() {
-    return colorMode.value === 'dark';
-  },
-  set() {
-    colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
-  }
-});
+const userInitial = computed(() => {
+  const name = user.value?.username || user.value?.email || '?'
+  return name.charAt(0).toUpperCase()
+})
 
 const toggleTheme = () => {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
-};
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
 
-const userMenuItems = [
-  [
-    {
-      label: user.value?.email || '',
-      slot: 'account',
-      disabled: true,
-    },
-  ],
-  [
-    {
-      label: 'Profil',
-      icon: 'i-heroicons-user-circle',
-      click: () => navigateTo('/profile'),
-    },
-    {
-      label: 'Paramètres',
-      icon: 'i-heroicons-cog-6-tooth',
-      click: () => navigateTo('/settings'),
-    },
-  ],
-  [
-    {
-      label: 'Déconnexion',
-      icon: 'i-heroicons-arrow-right-on-rectangle',
-      click: () => logout(),
-    },
-  ],
-];
+const navGroups = [
+  {
+    label: 'Pilotage',
+    items: [
+      { to: '/',                   label: 'Dashboard',    icon: 'i-heroicons-home' },
+      { to: '/transactions',       label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
+      { to: '/accounts',           label: 'Comptes',      icon: 'i-heroicons-building-library' },
+      { to: '/budgets',            label: 'Enveloppes',   icon: 'i-heroicons-envelope-open' },
+      { to: '/savings',            label: 'Épargne',      icon: 'i-heroicons-banknotes' },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { to: '/analyses',            label: 'Analyses',    icon: 'i-heroicons-chart-bar-square' },
+      { to: '/recurring',          label: 'Récurrents',  icon: 'i-heroicons-arrow-path' },
+      { to: '/categories',         label: 'Catégories',  icon: 'i-heroicons-tag' },
+    ],
+  },
+]
 
-// Register global keyboard shortcuts
+const bottomNavLinks = [
+  { to: '/',             label: 'Accueil',      icon: 'i-heroicons-home' },
+  { to: '/transactions', label: 'Transactions', icon: 'i-heroicons-arrows-right-left' },
+  { to: '/accounts',     label: 'Comptes',      icon: 'i-heroicons-building-library' },
+  { to: '/budgets',      label: 'Enveloppes',   icon: 'i-heroicons-envelope-open' },
+  { to: '/settings',     label: 'Plus',         icon: 'i-heroicons-ellipsis-horizontal-circle' },
+]
+
+const isActive = (item: { to: string }) => {
+  if (item.to === '/') return route.path === '/'
+  return route.path.startsWith(item.to)
+}
+
+const userMenuItems = computed(() => [
+  [
+    { label: 'Profil & paramètres', icon: 'i-heroicons-user-circle', click: () => navigateTo('/settings') },
+  ],
+  [
+    { label: 'Déconnexion', icon: 'i-heroicons-arrow-right-on-rectangle', click: () => logout() },
+  ],
+])
+
 onMounted(async () => {
-  // Generate missing recurring transactions
-  await generateRecurring();
-
-  // ? key to open shortcuts help
-  registerShortcut('?', () => {
-    showShortcutsHelp.value = true;
-  }, {
-    description: 'Afficher l\'aide des raccourcis clavier'
-  });
-});
+  await generateRecurring()
+  registerShortcut('?', () => { showShortcutsHelp.value = true }, {
+    description: 'Afficher l\'aide des raccourcis clavier',
+  })
+})
 </script>
+
+<style scoped>
+/* ── App shell ─────────────────────────────────────────────── */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: none;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+@media (min-width: 1024px) { .sidebar { display: flex; } }
+
+/* Logo */
+.sidebar-logo {
+  padding: 18px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.sidebar-logo-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.sidebar-app-name    { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.2px; line-height: 1.2; }
+.sidebar-app-version { font-size: 10px; color: var(--ink-4); line-height: 1.2; }
+
+/* Nav */
+.sidebar-nav {
+  flex: 1;
+  padding: 4px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sidebar-group-label {
+  font-size: 10px;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+  padding: 6px 8px 4px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  height: 34px;
+  border-radius: 7px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+  transition: background 0.1s, color 0.1s;
+}
+.sidebar-item:hover { background: var(--surface-2); }
+.sidebar-item--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 500;
+}
+.sidebar-item-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.sidebar-item--active .sidebar-item-icon { color: var(--accent); }
+
+/* Footer */
+.sidebar-footer {
+  padding: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 10px;
+  height: 34px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.sidebar-theme-btn:hover { background: var(--surface-2); }
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.sidebar-user:hover { background: var(--surface-2); }
+.sidebar-user-avatar {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+  color: #fff; display: grid; place-items: center;
+  font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.sidebar-user-info { flex: 1; min-width: 0; }
+.sidebar-user-name  { font-size: 12.5px; font-weight: 500; color: var(--ink); line-height: 1.2; }
+.sidebar-user-email { font-size: 10.5px; color: var(--ink-3); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Main area ─────────────────────────────────────────────── */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile topbar */
+.mobile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+@media (min-width: 1024px) { .mobile-topbar { display: none; } }
+
+/* Page content */
+.page-content {
+  flex: 1;
+  padding-bottom: 72px;
+}
+@media (min-width: 1024px) { .page-content { padding-bottom: 0; } }
+
+/* ── Mobile menu items ─────────────────────────────────────── */
+.mobile-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border-radius: 7px; font-size: 13.5px;
+  color: var(--ink-2); background: transparent; border: none;
+  cursor: pointer; text-decoration: none; transition: background 0.1s;
+  font-family: inherit;
+}
+.mobile-menu-item:hover { background: var(--surface-2); }
+.mobile-menu-item--active { color: var(--accent); background: var(--accent-soft); font-weight: 500; }
+
+/* ── Bottom nav ────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 60px; background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  z-index: 40; padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 1024px) { .bottom-nav { display: none; } }
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; text-decoration: none; color: var(--ink-3); transition: color 0.12s;
+}
+.bottom-nav-item--active { color: var(--accent); }
+.bottom-nav-label { font-size: 10px; font-weight: 500; }
+</style>

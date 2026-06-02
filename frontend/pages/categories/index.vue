@@ -37,6 +37,26 @@ const filteredCategories = computed(() => {
 const incomeCategories = computed(() => categories.value.filter(c => c.type === 'income'))
 const expenseCategories = computed(() => categories.value.filter(c => c.type === 'expense'))
 
+/**
+ * Map des couleurs Tailwind vers des valeurs CSS utilisables dans les styles inline.
+ * Nécessaire car les classes Tailwind dynamiques (bg-${color}-100) ne sont pas
+ * incluses dans le build si elles ne sont pas référencées statiquement.
+ */
+const COLOR_MAP: Record<string, { bg: string; text: string; border: string }> = {
+  red:    { bg: '#fee2e2', text: '#dc2626', border: 'rgba(220,38,38,0.25)' },
+  orange: { bg: '#ffedd5', text: '#ea580c', border: 'rgba(234,88,12,0.25)' },
+  yellow: { bg: '#fef9c3', text: '#ca8a04', border: 'rgba(202,138,4,0.25)' },
+  green:  { bg: '#dcfce7', text: '#16a34a', border: 'rgba(22,163,74,0.25)' },
+  blue:   { bg: '#dbeafe', text: '#2563eb', border: 'rgba(37,99,235,0.25)' },
+  indigo: { bg: '#e0e7ff', text: '#4338ca', border: 'rgba(67,56,202,0.25)' },
+  purple: { bg: '#f3e8ff', text: '#9333ea', border: 'rgba(147,51,234,0.25)' },
+  pink:   { bg: '#fce7f3', text: '#db2777', border: 'rgba(219,39,119,0.25)' },
+  gray:   { bg: '#f1f5f9', text: '#64748b', border: 'rgba(100,116,139,0.25)' },
+}
+
+/** Retourne les tokens CSS d'une couleur nommée, avec fallback sur gray. */
+const getColorTokens = (color: string) => COLOR_MAP[color] ?? COLOR_MAP.gray
+
 // Icons disponibles
 const availableIcons = [
   { value: 'i-heroicons-home', label: 'Maison' },
@@ -186,130 +206,191 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold">Catégories</h1>
-      <UButton @click="openModal()" icon="i-heroicons-plus" size="lg">
-        Nouvelle catégorie
-      </UButton>
-    </div>
+  <div class="page-root fade-up">
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <UCard>
-        <div class="text-sm text-gray-500">Total</div>
-        <div class="text-2xl font-bold">{{ categories.length }}</div>
-        <div class="text-xs text-gray-400">catégories</div>
-      </UCard>
-      <UCard>
-        <div class="text-sm text-gray-500">Revenus</div>
-        <div class="text-2xl font-bold text-green-600">{{ incomeCategories.length }}</div>
-        <div class="text-xs text-gray-400">catégories</div>
-      </UCard>
-      <UCard>
-        <div class="text-sm text-gray-500">Dépenses</div>
-        <div class="text-2xl font-bold text-red-600">{{ expenseCategories.length }}</div>
-        <div class="text-xs text-gray-400">catégories</div>
-      </UCard>
-    </div>
+    <!-- ── Header ──────────────────────────────────────────────── -->
+    <PageHeader
+      title="Catégories"
+      :subtitle="`${categories.length} catégorie(s) · ${incomeCategories.length} revenus · ${expenseCategories.length} dépenses`"
+    >
+      <template #actions>
+        <button class="ds-btn ds-btn-primary" @click="openModal()">
+          <UIcon name="i-heroicons-plus" style="width:14px;height:14px;" />
+          <span class="hidden sm:inline">Nouvelle catégorie</span>
+          <span class="sm:hidden">Ajouter</span>
+        </button>
+      </template>
+    </PageHeader>
 
-    <!-- Filter -->
-    <UCard class="mb-6">
-      <div class="flex gap-2">
-        <UButton
-          :color="filterType === '' ? 'primary' : 'gray'"
-          variant="soft"
-          @click="filterType = ''"
-        >
-          Toutes ({{ categories.length }})
-        </UButton>
-        <UButton
-          :color="filterType === 'income' ? 'green' : 'gray'"
-          variant="soft"
-          @click="filterType = 'income'"
-        >
-          Revenus ({{ incomeCategories.length }})
-        </UButton>
-        <UButton
-          :color="filterType === 'expense' ? 'red' : 'gray'"
-          variant="soft"
-          @click="filterType = 'expense'"
-        >
-          Dépenses ({{ expenseCategories.length }})
-        </UButton>
-      </div>
-    </UCard>
-
-    <!-- Categories Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <UCard
-        v-for="category in filteredCategories"
-        :key="category.id"
-        class="hover:shadow-lg transition-shadow"
+    <!-- ── Filter tabs ──────────────────────────────────────────── -->
+    <div class="filter-tabs">
+      <button
+        class="filter-tab"
+        :class="{ 'filter-tab--active': filterType === '' }"
+        @click="filterType = ''"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex items-center gap-3 flex-1">
-            <div
-              class="w-12 h-12 rounded-full flex items-center justify-center"
-              :class="`bg-${category.color}-100`"
-            >
-              <UIcon
-                :name="category.icon"
-                :class="`text-${category.color}-600 text-xl`"
-              />
-            </div>
-            <div class="flex-1">
-              <h3 class="font-semibold">{{ category.name }}</h3>
-              <UBadge
-                :color="category.type === 'income' ? 'green' : 'red'"
-                variant="subtle"
-                size="xs"
-              >
-                {{ category.type_display }}
-              </UBadge>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-2 mt-4">
-          <UButton
-            size="sm"
-            color="gray"
-            variant="ghost"
-            icon="i-heroicons-pencil"
-            @click="openModal(category)"
-          >
-            Modifier
-          </UButton>
-          <UButton
-            size="sm"
-            color="red"
-            variant="ghost"
-            icon="i-heroicons-trash"
-            @click="handleDelete(category)"
-          >
-            Supprimer
-          </UButton>
-        </div>
-      </UCard>
-
-      <UCard v-if="filteredCategories.length === 0 && !loading" class="col-span-full">
-        <div class="text-center py-12">
-          <UIcon name="i-heroicons-tag" class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-medium">Aucune catégorie</h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Commencez par créer votre première catégorie
-          </p>
-          <div class="mt-6">
-            <UButton @click="openModal()">
-              Nouvelle catégorie
-            </UButton>
-          </div>
-        </div>
-      </UCard>
+        Toutes
+        <span class="filter-count">{{ categories.length }}</span>
+      </button>
+      <button
+        class="filter-tab filter-tab--income"
+        :class="{ 'filter-tab--income-active': filterType === 'income' }"
+        @click="filterType = 'income'"
+      >
+        Revenus
+        <span class="filter-count">{{ incomeCategories.length }}</span>
+      </button>
+      <button
+        class="filter-tab filter-tab--expense"
+        :class="{ 'filter-tab--expense-active': filterType === 'expense' }"
+        @click="filterType = 'expense'"
+      >
+        Dépenses
+        <span class="filter-count">{{ expenseCategories.length }}</span>
+      </button>
     </div>
 
-    <!-- Confirm Delete Modal -->
+    <!-- ── Loading ─────────────────────────────────────────────── -->
+    <div v-if="loading && categories.length === 0" class="cat-grid">
+      <div v-for="i in 8" :key="i" class="cat-card skeleton-card">
+        <div class="skeleton-icon" />
+        <div style="flex:1;">
+          <div class="skeleton-line" style="width:70%;height:14px;" />
+          <div class="skeleton-line" style="width:40%;height:11px;margin-top:6px;" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Empty state ─────────────────────────────────────────── -->
+    <div v-else-if="filteredCategories.length === 0 && !loading" class="section-card empty-section">
+      <UIcon name="i-heroicons-tag" style="width:40px;height:40px;color:var(--ink-4);" />
+      <p style="font-size:14px;font-weight:500;color:var(--ink-2);margin:8px 0 0;">Aucune catégorie</p>
+      <p style="font-size:13px;color:var(--ink-3);margin:4px 0 0;">Commencez par créer votre première catégorie</p>
+      <button class="ds-btn ds-btn-primary" style="margin-top:16px;" @click="openModal()">
+        <UIcon name="i-heroicons-plus" style="width:14px;height:14px;" />
+        Nouvelle catégorie
+      </button>
+    </div>
+
+    <!-- ── 2 sections : Dépenses / Revenus ────────────────────── -->
+    <template v-else>
+
+      <!-- Section Dépenses -->
+      <div v-if="filterType === '' || filterType === 'expense'" class="section-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <span class="section-dot section-dot--expense" />
+              Dépenses
+            </div>
+            <div class="section-sub">{{ expenseCategories.length }} catégorie(s)</div>
+          </div>
+        </div>
+
+        <div v-if="expenseCategories.length === 0" class="section-empty">
+          Aucune catégorie de dépense
+        </div>
+        <div v-else class="cat-grid">
+          <div
+            v-for="category in expenseCategories"
+            :key="category.id"
+            class="cat-card"
+          >
+            <!-- Icône colorée -->
+            <div
+              class="cat-icon"
+              :style="{
+                background: getColorTokens(category.color).bg,
+                color: getColorTokens(category.color).text,
+                border: `1px solid ${getColorTokens(category.color).border}`,
+              }"
+            >
+              <UIcon :name="category.icon" style="width:18px;height:18px;" />
+            </div>
+            <!-- Nom + type -->
+            <div class="cat-info">
+              <div class="cat-name">{{ category.name }}</div>
+              <span class="ds-badge ds-badge-danger" style="font-size:10px;">Dépense</span>
+            </div>
+            <!-- Actions -->
+            <div class="cat-actions">
+              <button
+                class="ds-btn-icon"
+                aria-label="Modifier la catégorie"
+                @click="openModal(category)"
+              >
+                <UIcon name="i-heroicons-pencil" style="width:13px;height:13px;" />
+              </button>
+              <button
+                class="ds-btn-icon ds-btn-icon--danger"
+                aria-label="Supprimer la catégorie"
+                @click="handleDelete(category)"
+              >
+                <UIcon name="i-heroicons-trash" style="width:13px;height:13px;" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Revenus -->
+      <div v-if="filterType === '' || filterType === 'income'" class="section-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <span class="section-dot section-dot--income" />
+              Revenus
+            </div>
+            <div class="section-sub">{{ incomeCategories.length }} catégorie(s)</div>
+          </div>
+        </div>
+
+        <div v-if="incomeCategories.length === 0" class="section-empty">
+          Aucune catégorie de revenu
+        </div>
+        <div v-else class="cat-grid">
+          <div
+            v-for="category in incomeCategories"
+            :key="category.id"
+            class="cat-card"
+          >
+            <div
+              class="cat-icon"
+              :style="{
+                background: getColorTokens(category.color).bg,
+                color: getColorTokens(category.color).text,
+                border: `1px solid ${getColorTokens(category.color).border}`,
+              }"
+            >
+              <UIcon :name="category.icon" style="width:18px;height:18px;" />
+            </div>
+            <div class="cat-info">
+              <div class="cat-name">{{ category.name }}</div>
+              <span class="ds-badge ds-badge-success" style="font-size:10px;">Revenu</span>
+            </div>
+            <div class="cat-actions">
+              <button
+                class="ds-btn-icon"
+                aria-label="Modifier la catégorie"
+                @click="openModal(category)"
+              >
+                <UIcon name="i-heroicons-pencil" style="width:13px;height:13px;" />
+              </button>
+              <button
+                class="ds-btn-icon ds-btn-icon--danger"
+                aria-label="Supprimer la catégorie"
+                @click="handleDelete(category)"
+              >
+                <UIcon name="i-heroicons-trash" style="width:13px;height:13px;" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </template>
+
+    <!-- ── Confirm Delete Modal ────────────────────────────────── -->
     <ConfirmModal
       v-model="showConfirmDelete"
       title="Supprimer la catégorie"
@@ -318,127 +399,396 @@ onMounted(() => {
       @confirm="executeDelete"
     />
 
-    <!-- Category Modal -->
-    <UModal v-model="showModal" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">
-            {{ editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}
-          </h3>
-        </template>
+    <!-- ── Category Modal ─────────────────────────────────────── -->
+    <UModal
+      v-model="showModal"
+      :ui="{
+        width: 'w-full sm:max-w-lg',
+        container: 'flex min-h-full sm:min-h-0 items-end sm:items-center justify-center',
+        base: 'relative text-left overflow-hidden w-full sm:rounded-xl rounded-t-xl rounded-b-none',
+        padding: 'p-0', background: '', ring: '', shadow: '',
+      }"
+    >
+      <div class="modal-panel">
+        <div class="modal-handle" aria-hidden />
+        <div class="modal-header">
+          <div class="modal-header-icon">
+            <UIcon :name="editingCategory ? 'i-heroicons-pencil' : 'i-heroicons-tag'" style="width:16px;height:16px;" />
+          </div>
+          <h3 class="modal-title">{{ editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h3>
+          <button class="modal-close" type="button" @click="closeModal">
+            <UIcon name="i-heroicons-x-mark" style="width:18px;height:18px;" />
+          </button>
+        </div>
+        <form class="modal-body" @submit.prevent="handleSubmit">
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Name -->
-          <UFormGroup label="Nom" required>
-            <UInput
-              v-model="form.name"
-              placeholder="Ex: Alimentation"
-              required
-            />
-            <FormFieldError :error="getErrorForField(formErrors, 'name')" />
-          </UFormGroup>
+          <!-- Nom -->
+          <div class="field-group">
+            <label class="field-label">Nom <span class="field-required">*</span></label>
+            <div class="field-wrap">
+              <UIcon name="i-heroicons-tag" class="field-icon" />
+              <input v-model="form.name" type="text" placeholder="Ex: Alimentation" class="field-input" inputmode="text" required />
+            </div>
+            <p v-if="getErrorForField(formErrors, 'name')" class="field-err">{{ getErrorForField(formErrors, 'name') }}</p>
+          </div>
 
           <!-- Type -->
-          <UFormGroup label="Type" required>
+          <div class="field-group">
+            <label class="field-label">Type <span class="field-required">*</span></label>
             <USelectMenu
               v-model="form.type"
-              :options="[
-                { label: 'Revenu', value: 'income' },
-                { label: 'Dépense', value: 'expense' }
-              ]"
+              :options="[{ label: 'Dépense', value: 'expense' }, { label: 'Revenu', value: 'income' }]"
               option-attribute="label"
               value-attribute="value"
+              size="lg"
             />
-            <FormFieldError :error="getErrorForField(formErrors, 'category_type')" />
-          </UFormGroup>
+            <p v-if="getErrorForField(formErrors, 'category_type')" class="field-err">{{ getErrorForField(formErrors, 'category_type') }}</p>
+          </div>
 
-          <!-- Icon -->
-          <UFormGroup label="Icône">
+          <!-- Icône -->
+          <div class="field-group">
+            <label class="field-label">Icône</label>
             <USelectMenu
               v-model="form.icon"
               :options="availableIcons"
               option-attribute="label"
               value-attribute="value"
+              size="lg"
             >
               <template #label>
-                <div class="flex items-center gap-2">
-                  <UIcon :name="form.icon" class="text-lg" />
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <UIcon :name="form.icon" style="width:16px;height:16px;" />
                   <span>{{ availableIcons.find(i => i.value === form.icon)?.label }}</span>
                 </div>
               </template>
               <template #option="{ option }">
-                <div class="flex items-center gap-2">
-                  <UIcon :name="option.value" class="text-lg" />
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <UIcon :name="option.value" style="width:16px;height:16px;" />
                   <span>{{ option.label }}</span>
                 </div>
               </template>
             </USelectMenu>
-          </UFormGroup>
+          </div>
 
-          <!-- Color -->
-          <UFormGroup label="Couleur">
-            <div class="grid grid-cols-3 gap-2">
+          <!-- Couleur -->
+          <div class="field-group">
+            <label class="field-label">Couleur</label>
+            <div class="color-picker">
               <button
                 v-for="colorOption in availableColors"
                 :key="colorOption.value"
                 type="button"
-                class="p-3 rounded-lg border-2 transition-all"
-                :class="[
-                  form.color === colorOption.value
-                    ? `border-${colorOption.value}-500 bg-${colorOption.value}-50`
-                    : 'border-gray-200 hover:border-gray-300'
-                ]"
+                class="color-swatch"
+                :title="colorOption.label"
+                :style="{
+                  background: getColorTokens(colorOption.value).bg,
+                  border: form.color === colorOption.value
+                    ? `2px solid ${getColorTokens(colorOption.value).text}`
+                    : `2px solid transparent`,
+                  outline: form.color === colorOption.value
+                    ? `2px solid ${getColorTokens(colorOption.value).text}`
+                    : 'none',
+                  outlineOffset: '2px',
+                }"
                 @click="form.color = colorOption.value"
               >
-                <div class="flex items-center gap-2">
-                  <div
-                    class="w-6 h-6 rounded-full"
-                    :class="`bg-${colorOption.value}-500`"
-                  ></div>
-                  <span class="text-sm">{{ colorOption.label }}</span>
-                </div>
+                <span class="color-dot" :style="{ background: getColorTokens(colorOption.value).text }" />
+                <span class="color-label">{{ colorOption.label }}</span>
               </button>
             </div>
-          </UFormGroup>
+          </div>
 
-          <!-- Preview -->
-          <UFormGroup label="Aperçu">
-            <div class="p-4 bg-warning rounded-lg border">
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-12 h-12 rounded-full flex items-center justify-center"
-                  :class="`bg-${form.color}-100`"
-                >
-                  <UIcon
-                    :name="form.icon"
-                    :class="`text-${form.color}-600 text-xl`"
-                  />
-                </div>
-                <div>
-                  <div class="font-semibold">{{ form.name || 'Nom de la catégorie' }}</div>
-                  <UBadge
-                    :color="form.type === 'income' ? 'green' : 'red'"
-                    variant="subtle"
-                    size="xs"
-                  >
-                    {{ form.type === 'income' ? 'Revenu' : 'Dépense' }}
-                  </UBadge>
-                </div>
-              </div>
+          <!-- Aperçu -->
+          <div class="cat-preview">
+            <div
+              class="cat-preview-icon"
+              :style="{
+                background: getColorTokens(form.color).bg,
+                color: getColorTokens(form.color).text,
+                border: `1px solid ${getColorTokens(form.color).border}`,
+              }"
+            >
+              <UIcon :name="form.icon" style="width:20px;height:20px;" />
             </div>
-          </UFormGroup>
+            <div>
+              <div style="font-size:14px;font-weight:500;color:var(--ink);">
+                {{ form.name || 'Nom de la catégorie' }}
+              </div>
+              <span
+                class="ds-badge"
+                :class="form.type === 'income' ? 'ds-badge-success' : 'ds-badge-danger'"
+                style="font-size:10px;margin-top:4px;"
+              >
+                {{ form.type === 'income' ? 'Revenu' : 'Dépense' }}
+              </span>
+            </div>
+          </div>
 
-          <!-- Actions -->
-          <div class="flex justify-end gap-2 pt-4">
-            <UButton color="gray" variant="ghost" @click="closeModal">
-              Annuler
-            </UButton>
-            <UButton type="submit" :loading="loading">
-              {{ editingCategory ? 'Mettre à jour' : 'Créer' }}
-            </UButton>
+          <div class="modal-footer" style="padding:0;border:none;margin-top:4px;">
+            <button type="button" class="ds-btn ds-btn-ghost" @click="closeModal">Annuler</button>
+            <button type="submit" class="ds-btn ds-btn-primary" :disabled="loading">
+              <span v-if="loading" class="btn-spinner" />
+              <span v-else>{{ editingCategory ? 'Mettre à jour' : 'Créer' }}</span>
+            </button>
           </div>
         </form>
-      </UCard>
+      </div>
     </UModal>
+
   </div>
 </template>
+
+<style scoped>
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .4s cubic-bezier(.2,.7,.2,1) both; }
+
+/* ── Root ── */
+.page-root {
+  padding: 16px 16px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .page-root { padding: 20px 24px 40px; gap: 18px; }
+}
+
+/* ── Filter tabs ── */
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+}
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.filter-tab:hover { background: var(--surface-2); color: var(--ink-2); }
+.filter-tab--active {
+  background: var(--accent);
+  color: #fff !important;
+}
+.filter-tab--income-active {
+  background: var(--success-soft);
+  color: var(--success) !important;
+}
+.filter-tab--expense-active {
+  background: var(--danger-soft);
+  color: var(--danger) !important;
+}
+.filter-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgba(0,0,0,0.08);
+  line-height: 1.4;
+}
+.filter-tab--active .filter-count { background: rgba(255,255,255,0.25); }
+
+/* ── Section card ── */
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+@media (min-width: 640px) { .section-card { padding: 20px 24px; } }
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.section-dot--expense { background: var(--danger); }
+.section-dot--income  { background: var(--success); }
+.section-empty {
+  font-size: 13px;
+  color: var(--ink-4);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ── Empty section (full page) ── */
+.empty-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+/* ── Category grid ── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 480px) {
+  .cat-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 768px) {
+  .cat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .cat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Category card ── */
+.cat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.cat-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.cat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.cat-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cat-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Danger icon button variant */
+.ds-btn-icon--danger {
+  color: var(--danger) !important;
+}
+.ds-btn-icon--danger:hover {
+  background: var(--danger-soft) !important;
+  border-color: color-mix(in oklab, var(--danger) 25%, transparent) !important;
+}
+
+/* ── Skeleton ── */
+.skeleton-card { pointer-events: none; }
+.skeleton-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  animation: pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.skeleton-line {
+  background: var(--line);
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
+
+/* ── Color picker (dans le modal) ── */
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.color-swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.color-swatch:hover { opacity: 0.85; }
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.color-label { font-size: 12.5px; font-weight: 500; }
+
+/* ── Preview (dans le modal) ── */
+.cat-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.cat-preview-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+</style>

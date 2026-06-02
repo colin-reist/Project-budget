@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from .api_token import APIToken, PendingAlert  # noqa: F401
+from decimal import Decimal
 
 
 class User(AbstractUser):
@@ -130,6 +131,54 @@ class UserProfile(models.Model):
         verbose_name='Jour du salaire',
         help_text='Jour du mois où le salaire est versé (1-31)',
         validators=[MinValueValidator(1), MaxValueValidator(31)]
+    )
+    # Personal info
+    phone = models.CharField(
+        max_length=20, blank=True, default='',
+        verbose_name='Téléphone'
+    )
+    birth_date = models.DateField(
+        null=True, blank=True,
+        verbose_name='Date de naissance'
+    )
+    # Locale preferences
+    language = models.CharField(
+        max_length=10, default='fr-CH',
+        verbose_name='Langue'
+    )
+    timezone_pref = models.CharField(
+        max_length=50, default='Europe/Zurich',
+        verbose_name='Fuseau horaire'
+    )
+    city = models.CharField(
+        max_length=100, blank=True, default='',
+        verbose_name='Ville'
+    )
+    country = models.CharField(
+        max_length=2, default='CH',
+        verbose_name='Pays'
+    )
+    # Budget preferences
+    budget_start_day = models.IntegerField(
+        default=1,
+        verbose_name='Début du mois budgétaire',
+        validators=[MinValueValidator(1), MaxValueValidator(31)]
+    )
+    budget_rollover = models.BooleanField(
+        default=True,
+        verbose_name='Reporter les soldes'
+    )
+    budget_roundup = models.BooleanField(
+        default=False,
+        verbose_name='Arrondi automatique'
+    )
+    budget_roundup_amount = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('1.00'),
+        verbose_name='Montant d\'arrondi'
+    )
+    show_cents = models.BooleanField(
+        default=True,
+        verbose_name='Afficher les centimes'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,

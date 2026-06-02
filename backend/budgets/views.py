@@ -261,6 +261,16 @@ class BudgetViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(budget)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['delete'])
+    def reset_all(self, request):
+        """
+        Supprime toutes les enveloppes (budgets) de l'utilisateur.
+
+        DELETE /api/v1/budgets/reset_all/
+        """
+        deleted_count, _ = Budget.objects.filter(user=request.user).delete()
+        return Response({'deleted': deleted_count})
+
 
 class SavingsGoalViewSet(viewsets.ModelViewSet):
     """
