@@ -372,25 +372,33 @@
               </div>
               <div class="card-fields-grid" style="padding:20px 22px">
                 <div class="form-field">
-                  <label class="field-label-sm">Début du mois budgétaire</label>
-                  <div class="ds-input-wrap" style="padding:0 12px 0 0;">
-                    <select v-model.number="budgetForm.budget_start_day" class="ds-select">
-                      <option :value="1">Le 1er du mois calendaire</option>
-                      <option :value="15">Le 15 du mois</option>
-                      <option :value="20">Le 20 du mois</option>
-                      <option :value="25">Le 25 du mois</option>
-                    </select>
-                  </div>
-                  <p class="field-hint">Souvent calé sur la date de votre salaire.</p>
+                  <label class="field-label-sm">Jour du salaire</label>
+                  <input
+                    v-model.number="budgetForm.salary_day"
+                    type="number" min="1" max="28" placeholder="Ex : 25"
+                    class="ds-input" inputmode="numeric"
+                  />
+                  <p class="field-hint">Jour du mois où votre salaire est versé (1–28).</p>
                 </div>
                 <div class="form-field">
-                  <label class="field-label-sm">Premier jour de la semaine</label>
-                  <div class="ds-input-wrap" style="padding:0 12px 0 0;">
-                    <select class="ds-select">
-                      <option value="mon">Lundi</option>
-                      <option value="sun">Dimanche</option>
-                    </select>
+                  <label class="field-label-sm">Début du mois budgétaire</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input
+                      v-model.number="budgetForm.budget_start_day"
+                      type="number" min="1" max="28"
+                      class="ds-input" inputmode="numeric" style="flex:1;"
+                    />
+                    <button
+                      v-if="budgetForm.salary_day"
+                      type="button"
+                      class="ds-btn ds-btn-secondary"
+                      style="white-space:nowrap;font-size:12px;height:36px;flex-shrink:0;"
+                      @click="budgetForm.budget_start_day = budgetForm.salary_day!"
+                    >
+                      ← Jour du salaire
+                    </button>
                   </div>
+                  <p class="field-hint">Le mois budgétaire commence ce jour-là.</p>
                 </div>
               </div>
               <div class="card-row">
@@ -997,6 +1005,7 @@ const isProfileDirty = computed(() =>
 
 /* ── Budget preferences state ──────────────────────────────── */
 const budgetForm = ref({
+  salary_day: null as number | null,
   budget_start_day: 1,
   budget_rollover: true,
   budget_roundup: false,
@@ -1113,6 +1122,7 @@ const syncFormsFromProfile = (data: any) => {
   initialProfileForm.value = JSON.stringify(profileForm.value)
 
   budgetForm.value = {
+    salary_day:          data.salary_day          ?? null,
     budget_start_day:    data.budget_start_day    ?? 1,
     budget_rollover:     data.budget_rollover     ?? true,
     budget_roundup:      data.budget_roundup      ?? false,
@@ -1167,6 +1177,7 @@ const resetProfileForm = () => {
 const handleBudgetUpdate = async () => {
   submitting.value = true
   const result = await updateProfile({
+    salary_day:          budgetForm.value.salary_day,
     budget_start_day:    budgetForm.value.budget_start_day,
     budget_rollover:     budgetForm.value.budget_rollover,
     budget_roundup:      budgetForm.value.budget_roundup,
