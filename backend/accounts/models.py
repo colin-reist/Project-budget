@@ -1,5 +1,7 @@
 from django.db import models
+from django.db.models import Sum, Case, When, F, Value, DecimalField
 from django.conf import settings
+from decimal import Decimal
 
 
 class Account(models.Model):
@@ -90,84 +92,45 @@ class Account(models.Model):
         self.balance += amount
         self.save(update_fields=['balance', 'updated_at'])
 
-    def get_current_balance(self):
-        """
-        Retourne le solde actuel en excluant les transactions futures
-        """
-        from datetime import date
+    def _aggregate_balance(self, date_filter=None):
+        """Calcule le solde via SQL aggregation. date_filter est un Q() optionnel."""
         from transactions.models import Transaction
-        from decimal import Decimal
 
-        today = date.today()
+        qs = Transaction.objects.filter(account=self)
+        if date_filter is not None:
+            qs = qs.filter(date_filter)
 
-        # Calculer le solde à partir des transactions passées
-        transactions = Transaction.objects.filter(
-            account=self,
-            date__lte=today
+        result = qs.exclude(type='adjustment').aggregate(
+            total=Sum(Case(
+                When(type='income', then=F('amount')),
+                When(type='expense', then=-F('amount')),
+                When(type='transfer', destination_account__isnull=False, then=-F('amount')),
+                default=Value(Decimal('0')),
+                output_field=DecimalField(max_digits=15, decimal_places=2),
+            ))
         )
 
-        balance = Decimal('0.00')
-        for transaction in transactions:
-            if transaction.type == 'income':
-                balance += transaction.amount
-            elif transaction.type == 'expense':
-                balance -= transaction.amount
-            elif transaction.type == 'transfer' and transaction.destination_account:
-                balance -= transaction.amount
-            elif transaction.type == 'adjustment':
-                # Lire le signe depuis les notes
-                if transaction.notes and 'ADJUSTMENT:' in transaction.notes:
-                    sign = transaction.notes.split('ADJUSTMENT:')[1].strip()
-                    if sign.startswith('+'):
-                        balance += transaction.amount
-                    else:
-                        balance -= transaction.amount
+        # Adjustments : signe encodé dans notes, traitement Python sur sous-ensemble limité
+        adj_qs = qs.filter(type='adjustment')
+        adj_balance = Decimal('0.00')
+        for t in adj_qs:
+            if t.notes and 'ADJUSTMENT:' in t.notes:
+                sign = t.notes.split('ADJUSTMENT:')[1].strip()
+                adj_balance += t.amount if sign.startswith('+') else -t.amount
 
-        # Ajouter les transferts reçus
-        incoming_transfers = Transaction.objects.filter(
-            destination_account=self,
-            type='transfer',
-            date__lte=today
-        )
-        for transfer in incoming_transfers:
-            balance += transfer.amount
+        incoming_qs = Transaction.objects.filter(destination_account=self, type='transfer')
+        if date_filter is not None:
+            incoming_qs = incoming_qs.filter(date_filter)
+        incoming = incoming_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-        return balance
+        return (result['total'] or Decimal('0')) + adj_balance + incoming
+
+    def get_current_balance(self):
+        """Retourne le solde actuel en excluant les transactions futures."""
+        from datetime import date
+        from django.db.models import Q
+        return self._aggregate_balance(Q(date__lte=date.today()))
 
     def get_projected_balance(self):
-        """
-        Retourne le solde projeté (incluant les transactions futures)
-        Calcule le solde en incluant TOUTES les transactions (même les futures)
-        """
-        from transactions.models import Transaction
-        from decimal import Decimal
-
-        # Calculer le solde à partir de TOUTES les transactions
-        transactions = Transaction.objects.filter(account=self)
-
-        balance = Decimal('0.00')
-        for transaction in transactions:
-            if transaction.type == 'income':
-                balance += transaction.amount
-            elif transaction.type == 'expense':
-                balance -= transaction.amount
-            elif transaction.type == 'transfer' and transaction.destination_account:
-                balance -= transaction.amount
-            elif transaction.type == 'adjustment':
-                # Lire le signe depuis les notes
-                if transaction.notes and 'ADJUSTMENT:' in transaction.notes:
-                    sign = transaction.notes.split('ADJUSTMENT:')[1].strip()
-                    if sign.startswith('+'):
-                        balance += transaction.amount
-                    else:
-                        balance -= transaction.amount
-
-        # Ajouter les transferts reçus
-        incoming_transfers = Transaction.objects.filter(
-            destination_account=self,
-            type='transfer'
-        )
-        for transfer in incoming_transfers:
-            balance += transfer.amount
-
-        return balance
+        """Retourne le solde projeté incluant toutes les transactions (même futures)."""
+        return self._aggregate_balance()

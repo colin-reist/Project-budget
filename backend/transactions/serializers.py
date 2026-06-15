@@ -98,6 +98,12 @@ class TransactionListSerializer(serializers.ModelSerializer):
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    destination_account_name = serializers.SerializerMethodField()
+
+    def get_destination_account_name(self, obj):
+        if obj.destination_account:
+            return obj.destination_account.name
+        return None
 
     class Meta:
         model = Transaction
@@ -112,6 +118,9 @@ class TransactionListSerializer(serializers.ModelSerializer):
             'amount',
             'description',
             'date',
+            'notes',
+            'destination_account',
+            'destination_account_name',
             'refund_budget',
             'is_recurring',
             'recurring_series_id',
