@@ -290,8 +290,8 @@ const formatCurrencyDisplay = (amount: number, currency = 'CHF'): string => {
   return new Intl.NumberFormat('fr-CH', {
     style: 'currency',
     currency,
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
   }).format(amount);
 };
 

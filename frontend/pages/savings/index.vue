@@ -1011,8 +1011,8 @@ const fmtCHF = (n: number): string =>
   new Intl.NumberFormat('fr-CH', {
     style: 'currency',
     currency: 'CHF',
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
   }).format(n);
 
 /** Compact format: 14820 → "14.8k", 850 → "850". */

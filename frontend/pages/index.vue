@@ -575,7 +575,7 @@ const chartGridLines = computed(() =>
 
 const formatCurrencyDisplay = (amount: number) => {
   const abs = Math.abs(amount);
-  const formatted = abs.toLocaleString('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const formatted = abs.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return `CHF ${amount < 0 ? '−' : ''}${formatted}`
 };
 const formatCurrency = (amount: number) => {

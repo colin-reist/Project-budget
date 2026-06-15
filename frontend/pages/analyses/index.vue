@@ -220,7 +220,7 @@ const donutSegs = computed(() => {
 
 // ── Formatters ────────────────────────────────────────────────
 function fmt(v: number) {
-  return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency.value}`
+  return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency.value}`
 }
 function fmtS(v: number) {
   const a = Math.abs(v)
