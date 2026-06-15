@@ -41,8 +41,7 @@ async function loadData() {
   try {
     await ensureProfileLoaded()
     const monthStart = `${isoMonth(currentYear, currentMonth)}-01`
-    const nextM = currentMonth === 12 ? `${currentYear + 1}-01` : isoMonth(currentYear, currentMonth + 1)
-    const monthEnd = `${nextM}-01`
+    const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
 
     const [s1, s2, cats, txns, bud] = await Promise.all([
       getMonthlySummary(currentYear),

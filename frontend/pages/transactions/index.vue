@@ -4,7 +4,7 @@ import type { StandardError } from '~/types/errors'
 
 definePageMeta({ middleware: 'auth' })
 
-const { getTransactions, createTransaction, updateTransaction, deleteTransaction, getStatistics, generateRecurring } = useTransactions()
+const { getTransactions, createTransaction, updateTransaction, deleteTransaction, generateRecurring } = useTransactions()
 const { updateSeries } = useRecurring()
 const { getAccounts } = useAccounts()
 const { getCategories } = useCategories()
@@ -55,6 +55,13 @@ const toggleDaySelect = (txns: Transaction[]) => {
   selectedIds.value = s
 }
 const clearSelected = () => { selectedIds.value = new Set() }
+const bulkDelete = async () => {
+  const ids = [...selectedIds.value]
+  clearSelected()
+  await Promise.all(ids.map(id => deleteTransaction(id)))
+  await fetchTransactions()
+  toast.add({ title: 'Succès', description: `${ids.length} transaction${ids.length > 1 ? 's supprimées' : ' supprimée'}`, color: 'green' })
+}
 
 // ── Computed filtered + grouped ──────────────────────────────
 const filteredTransactions = computed(() => {
@@ -64,7 +71,7 @@ const filteredTransactions = computed(() => {
     if (filters.value.category !== 'all' && t.category !== parseInt(filters.value.category)) return false
     if (filters.value.search) {
       const q = filters.value.search.toLowerCase()
-      return t.description.toLowerCase().includes(q) || t.notes?.toLowerCase().includes(q) || t.category_details?.name?.toLowerCase().includes(q)
+      return t.description.toLowerCase().includes(q) || t.notes?.toLowerCase().includes(q) || t.category_name?.toLowerCase().includes(q)
     }
     return true
   })
@@ -140,7 +147,7 @@ const openModal = (transaction?: Transaction) => {
     editingTransaction.value = transaction
     const catMismatch = transaction.category_details != null && transaction.category_details.type !== transaction.type
     form.value = {
-      type: transaction.type, account: transaction.account.toString(),
+      type: (transaction.type === 'adjustment' ? 'expense' : transaction.type) as 'income' | 'expense' | 'transfer', account: transaction.account.toString(),
       category: catMismatch ? '' : (transaction.category?.toString() || ''),
       destination_account: transaction.destination_account?.toString() || '',
       amount: transaction.amount, description: transaction.description, date: transaction.date,
@@ -196,8 +203,7 @@ const handleSubmit = async () => {
   loading.value = false
   if (result.success) {
     toast.add({ title: 'Succès', description: editingTransaction.value ? 'Transaction mise à jour' : 'Transaction créée', color: 'green' })
-    closeModal(); await fetchTransactions(); await fetchStats()
-  } else if (result.error) {
+    closeModal(); await fetchTransactions();   } else if (result.error) {
     formErrors.value = result.error
     toast.add({ title: 'Erreur', description: formatForToast(result.error), color: 'red' })
   }
@@ -225,8 +231,7 @@ const executeDelete = async () => {
   loading.value = false; transactionToDelete.value = null
   if (result.success) {
     toast.add({ title: 'Succès', description: 'Transaction supprimée', color: 'green' })
-    clearSelected(); await fetchTransactions(); await fetchStats()
-  } else {
+    clearSelected(); await fetchTransactions();   } else {
     toast.add({ title: 'Erreur', description: 'Impossible de supprimer', color: 'red' })
   }
 }
@@ -255,8 +260,6 @@ const fetchBudgets = async () => {
   const r = await getBudgets({ is_active: true })
   if (r.data?.results) spendingBudgets.value = r.data.results.filter(b => !b.is_savings_goal).map(b => ({ id: b.id, name: b.name }))
 }
-const fetchStats = async () => { await getStatistics() }
-
 const onMonthChange = ({ year, month }: { year: number; month: number }) => {
   currentMonthDate.value = new Date(year, month - 1, 1)
 }
@@ -268,8 +271,8 @@ onMounted(async () => {
   // Initialise la navigation au mois budgétaire courant (selon budget_start_day)
   const { year, month } = getCurrentBudgetMonth(budgetStartDay.value)
   currentMonthDate.value = new Date(year, month - 1, 1)
-  await generateRecurring()
-  fetchTransactions(); fetchAccounts(); fetchCategories(); fetchStats(); fetchBudgets()
+  generateRecurring()
+  fetchTransactions(); fetchAccounts(); fetchCategories(); fetchBudgets()
   document.addEventListener('click', (e) => {
     if (!(e.target as Element)?.closest('.tx-dropdown')) closeDropdowns()
   })
@@ -290,10 +293,6 @@ onMounted(async () => {
             :model-value="{ year: currentMonthDate.getFullYear(), month: currentMonthDate.getMonth() + 1 }"
             @update:model-value="onMonthChange"
           />
-          <button class="ds-btn ds-btn-secondary" style="height:36px;font-size:13px;">
-            <UIcon name="i-heroicons-arrow-up-tray" style="width:14px;height:14px;" />
-            <span class="hidden sm:inline">Importer CSV</span>
-          </button>
           <button class="ds-btn ds-btn-primary" style="height:36px;font-size:13px;" @click="openModal()">
             <UIcon name="i-heroicons-plus" style="width:14px;height:14px;" />
             <span class="hidden sm:inline">Nouvelle transaction</span>
@@ -430,7 +429,7 @@ onMounted(async () => {
             title="Impossible de charger les transactions"
             description="Vérifiez votre connexion et réessayez."
             button-text="Réessayer" button-icon="i-heroicons-arrow-path"
-            @action="fetchTransactions(); fetchStats()" />
+            @action="fetchTransactions()" />
         </div>
 
         <!-- Empty -->
@@ -493,22 +492,22 @@ onMounted(async () => {
                 <div class="tx-row-left">
                   <div class="tx-row-desc">{{ txn.description || '—' }}</div>
                   <div class="mono tx-row-meta">
-                    {{ txn.date || '' }} · {{ txn.account_details?.name }}
-                    <template v-if="txn.type === 'transfer' && txn.destination_account_details">
-                      → {{ txn.destination_account_details.name }}
+                    {{ txn.date || '' }} · {{ txn.account_name }}
+                    <template v-if="txn.type === 'transfer' && txn.destination_account_name">
+                      → {{ txn.destination_account_name }}
                     </template>
                   </div>
                 </div>
 
                 <!-- Category chip -->
-                <div v-if="txn.category_details || txn.type === 'transfer'" class="tx-chip"
+                <div v-if="txn.category_name || txn.type === 'transfer'" class="tx-chip"
                   :style="{
                     background: categoryChipColor(txn.type).bg,
                     border: `1px solid ${categoryChipColor(txn.type).border}`,
                     color: categoryChipColor(txn.type).color,
                   }">
                   <span class="tx-chip-dot" :style="{ background: categoryChipColor(txn.type).color }" />
-                  {{ txn.type === 'transfer' ? 'Transfert' : txn.category_details?.name }}
+                  {{ txn.type === 'transfer' ? 'Transfert' : txn.category_name }}
                 </div>
               </div>
 
@@ -551,11 +550,7 @@ onMounted(async () => {
           {{ selectedIds.size }} transaction{{ selectedIds.size > 1 ? 's' : '' }} sélectionnée{{ selectedIds.size > 1 ? 's' : '' }}
         </span>
         <span class="tx-bulk-sep" />
-        <button class="tx-bulk-btn" @click="() => {}">
-          <UIcon name="i-heroicons-tag" style="width:14px;height:14px;" />
-          Recatégoriser
-        </button>
-        <button class="tx-bulk-btn tx-bulk-btn--danger" @click="clearSelected">
+        <button class="tx-bulk-btn tx-bulk-btn--danger" @click="bulkDelete">
           <UIcon name="i-heroicons-trash" style="width:14px;height:14px;" />
           Supprimer
         </button>

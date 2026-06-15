@@ -7,7 +7,7 @@
       <p class="tx-desc">{{ transaction.description || '(sans description)' }}</p>
       <p class="tx-meta">
         {{ formattedDate }}
-        <span v-if="transaction.category" class="tx-cat">· {{ transaction.category.name }}</span>
+        <span v-if="transaction.category_name" class="tx-cat">· {{ transaction.category_name }}</span>
       </p>
     </div>
     <div class="tx-amount mono" :style="{ color: amountColor }">

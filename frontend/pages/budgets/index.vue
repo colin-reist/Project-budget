@@ -222,7 +222,7 @@ const openModal = (budget?: Budget) => {
       alert_threshold: budget.alert_threshold,
       is_active: budget.is_active,
       is_savings_goal: budget.is_savings_goal || false,
-      is_mandatory_savings: (budget as any).is_mandatory_savings || false
+      is_mandatory_savings: budget.is_mandatory_savings || false
     }
   } else {
     editingBudget.value = null

@@ -512,7 +512,8 @@ const totalBudget = computed(() => {
   if (!budgetDashData.value) return 0;
   return budgetDashData.value.categories.reduce((s: number, c: any) => s + (c.prevu || 0), 0);
 });
-const toAssign = computed(() => monthlyIncome.value - totalBudget.value);
+const plannedIncome = computed(() => budgetDashData.value?.revenu_mensuel ?? monthlyIncome.value);
+const toAssign = computed(() => plannedIncome.value - totalBudget.value);
 const spendPct = computed(() =>
   totalBudget.value > 0 ? Math.min(100, (monthlyExpenses.value / totalBudget.value) * 100) : 0
 );

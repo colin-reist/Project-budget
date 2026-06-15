@@ -78,6 +78,7 @@ export interface Transaction {
   id: number;
   user?: number;
   account: number;
+  account_name?: string;
   account_details?: {
     id: number;
     name: string;
@@ -88,6 +89,7 @@ export interface Transaction {
     is_active: boolean;
   };
   category?: number | null;
+  category_name?: string | null;
   category_details?: {
     id: number;
     name: string;
@@ -97,13 +99,14 @@ export interface Transaction {
     color: string;
     is_active: boolean;
   } | null;
-  type: 'income' | 'expense' | 'transfer';
+  type: 'income' | 'expense' | 'transfer' | 'adjustment';
   type_display?: string;
   amount: string;
   description: string;
   date: string;
   notes?: string | null;
   destination_account?: number | null;
+  destination_account_name?: string | null;
   destination_account_details?: {
     id: number;
     name: string;
@@ -183,6 +186,7 @@ export interface Budget {
   alert_threshold: number;
   is_active: boolean;
   is_savings_goal: boolean;
+  is_mandatory_savings?: boolean;
   spent_amount?: number;
   remaining_amount?: number;
   percentage_used?: number;
@@ -241,9 +245,9 @@ export interface WebAuthnCredential {
   user: number;
   credential_id: string;
   public_key: string;
-  sign_count: number;
+  counter: number;
   created_at: string;
-  last_used_at: string;
+  last_used: string;
 }
 
 // API Response types
