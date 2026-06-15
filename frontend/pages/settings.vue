@@ -373,21 +373,25 @@
               <div class="card-fields-grid" style="padding:20px 22px">
                 <div class="form-field">
                   <label class="field-label-sm">Jour du salaire</label>
-                  <input
-                    v-model.number="budgetForm.salary_day"
-                    type="number" min="1" max="28" placeholder="Ex : 25"
-                    class="ds-input" inputmode="numeric"
-                  />
+                  <div class="ds-input-wrap">
+                    <input
+                      v-model.number="budgetForm.salary_day"
+                      type="number" min="1" max="28" placeholder="Ex : 25"
+                      class="ds-input" inputmode="numeric"
+                    />
+                  </div>
                   <p class="field-hint">Jour du mois où votre salaire est versé (1–28).</p>
                 </div>
                 <div class="form-field">
                   <label class="field-label-sm">Début du mois budgétaire</label>
                   <div style="display:flex;gap:8px;align-items:center;">
-                    <input
-                      v-model.number="budgetForm.budget_start_day"
-                      type="number" min="1" max="28"
-                      class="ds-input" inputmode="numeric" style="flex:1;"
-                    />
+                    <div class="ds-input-wrap" style="flex:1;">
+                      <input
+                        v-model.number="budgetForm.budget_start_day"
+                        type="number" min="1" max="28"
+                        class="ds-input" inputmode="numeric"
+                      />
+                    </div>
                     <button
                       v-if="budgetForm.salary_day"
                       type="button"
